@@ -47,8 +47,11 @@ truth, Neon = disposable dev branches.**
 | `ADMIN_SECRET` | `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
 | `CRON_SECRET` | another random 32-byte hex (≠ ADMIN_SECRET) |
 
-4. Deploy. Cron (`vercel.json` → `/api/agent/run` every 15 min) activates
-   automatically; Vercel attaches `CRON_SECRET` as a Bearer token.
+4. Deploy. Cron (`vercel.json` → `/api/agent/run` daily at 03:00 UTC — the
+   Hobby-plan maximum; tighten to `*/15 * * * *` on Pro for near-real-time
+   autonomy) activates automatically; Vercel attaches `CRON_SECRET` as a
+   Bearer token. Intraday runs are always available via
+   Autopilot page → "Run agent now".
 
 ### Option B — CLI
 ```bash
