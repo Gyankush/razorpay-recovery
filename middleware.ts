@@ -52,6 +52,13 @@ export function middleware(req: NextRequest) {
           (p.endsWith("/payment-link") || p.endsWith("/actions")),
         limit: 20,
       },
+      // Seamless demo autopilot: public reads + demo-scoped writes. The
+      // connector forces the simulated gateway in DEMO_MODE, so none of
+      // these can move real money. Power routes (merchants, eval,
+      // batch-execute, connectors, sweeps) always stay key-gated.
+      { match: (p) => p === "/api/agent/brief", limit: 30 },
+      { match: (p) => p === "/api/autopilot/policy", limit: 20 },
+      { match: (p) => p === "/api/agent/run", limit: 10 },
     ];
     for (const rule of demoAllow) {
       if (rule.match(pathname, req.method)) {

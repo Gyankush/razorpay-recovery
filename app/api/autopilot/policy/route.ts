@@ -8,12 +8,14 @@ import {
 } from "@/lib/agent/autopilot";
 import { logAuditEvent } from "@/lib/domain/audit";
 import { getRequestId, isUuid, requireAdmin, safeJsonParse } from "@/lib/http";
+import { isDemoMode } from "@/lib/gateway";
 import { eq } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const adminBlock = requireAdmin(req);
+  // Policies contain guardrails, not secrets — public in the demo sandbox.
+  const adminBlock = isDemoMode() ? null : requireAdmin(req);
   if (adminBlock) return adminBlock;
   try {
     const { searchParams } = new URL(req.url);
@@ -52,7 +54,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const adminBlock = requireAdmin(req);
+  // Demo-safe: validation strips NEVER_AUTO categories and clamps caps, and
+  // the simulated gateway makes auto-execution money-inert in DEMO_MODE.
+  const adminBlock = isDemoMode() ? null : requireAdmin(req);
   if (adminBlock) return adminBlock;
   const requestId = getRequestId(req, "policy");
 

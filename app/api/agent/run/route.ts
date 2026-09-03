@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runAutopilot } from "@/lib/agent/autopilot";
 import { getRequestId, requireAdmin } from "@/lib/http";
+import { isDemoMode } from "@/lib/gateway";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -12,7 +13,9 @@ export const maxDuration = 300;
  * reconciliation sweep, and files a full run report in the audit log.
  */
 export async function GET(req: NextRequest) {
-  const adminBlock = requireAdmin(req);
+  // DEMO_MODE sandbox runs are public (rate-limited by middleware) and can
+  // never move money — the connector forces the simulated gateway.
+  const adminBlock = isDemoMode() ? null : requireAdmin(req);
   if (adminBlock) return adminBlock;
   const requestId = getRequestId(req, "agent");
 

@@ -13,6 +13,9 @@ import {
   KeyRound,
   Save,
   CheckCircle2,
+  FlaskConical,
+  Sparkles,
+  ArrowRight,
 } from "lucide-react";
 import { adminHeaders, getAdminKey, setAdminKey } from "@/lib/admin-key";
 
@@ -45,6 +48,8 @@ export default function AutopilotPage() {
   const [rows, setRows] = useState<MerchantRow[]>([]);
   const [brief, setBrief] = useState<Brief | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [demoMode, setDemoMode] = useState(false);
   const [key, setKey] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
@@ -53,20 +58,35 @@ export default function AutopilotPage() {
   const load = async () => {
     try {
       setLoading(true);
-      const [pRes, bRes] = await Promise.all([
+      setLoadError(null);
+      const [pRes, bRes, dRes] = await Promise.all([
         fetch("/api/autopilot/policy", { headers: adminHeaders() }),
         fetch("/api/agent/brief", { headers: adminHeaders() }),
+        fetch("/api/demo/status").catch(() => null),
       ]);
+      if (dRes && dRes.ok) {
+        const d = await dRes.json();
+        setDemoMode(d.demo_mode === true);
+      }
+      let ok = false;
       if (pRes.ok) {
         const p = await pRes.json();
         setRows(p.merchants || []);
+        ok = true;
       }
       if (bRes.ok) {
         const b = await bRes.json();
         setBrief(b.brief);
+        ok = true;
+      }
+      if (!ok) {
+        setLoadError(
+          "This deployment is locked: paste the operator key above to view the copilot brief and guardrails."
+        );
       }
     } catch (err) {
       console.error("Failed to load autopilot:", err);
+      setLoadError("Could not reach the autopilot API. Check your connection and retry.");
     } finally {
       setLoading(false);
     }
@@ -207,10 +227,34 @@ export default function AutopilotPage() {
           <div className="text-xs font-bold uppercase tracking-wider text-[#2ca7b8] mb-1">Autonomous recovery</div>
           <h2 className="text-2xl font-extrabold text-[#12304a] tracking-tight">Copilot brief &amp; guardrails</h2>
           <p className="text-sm text-[#637181] mt-1 max-w-3xl">
-            Autopilot auto-recovers only allowlisted, under-cap, high-confidence cases. Risk, config and unknown
-            cases always stay human — every decision lands in the audit trail.
+            One AI pipeline: <strong>Diagnose</strong> explains every failure,{" "}
+            <strong>Autopilot</strong> auto-recovers only allowlisted, under-cap, high-confidence
+            cases, and the <strong>Brief</strong> below watches recovery rate and anomalies.
+            Risk, config and unknown cases always stay human — every decision lands in the audit trail.
           </p>
         </div>
+
+        {demoMode && (
+          <div className="p-4 rounded-2xl bg-white border-2 border-dashed border-[#2ca7b8] text-xs text-[#4e6574] animate-fadeIn">
+            <div className="flex items-center gap-1.5 font-extrabold text-[#12304a] text-sm mb-1.5">
+              <FlaskConical className="w-4 h-4 text-[#2ca7b8]" />
+              Try the autonomy loop — no key needed in this sandbox
+            </div>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span>1. Flip a merchant <strong>Autopilot ON</strong> + Save</span>
+              <ArrowRight className="w-3 h-3" />
+              <span>2. <Link href="/" className="font-bold text-[#1d6b9f] hover:underline">Seed a failure</Link></span>
+              <ArrowRight className="w-3 h-3" />
+              <span>3. <strong>Run agent now</strong> — watch it auto-recover safe cases and skip the rest with reasons</span>
+            </div>
+          </div>
+        )}
+
+        {loadError && (
+          <div role="alert" className="p-4 rounded-xl bg-[#ffe5e5] border border-[#f1bfc5] text-[#8c3340] text-sm font-medium animate-fadeIn">
+            {loadError}
+          </div>
+        )}
 
         {/* Brief */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">

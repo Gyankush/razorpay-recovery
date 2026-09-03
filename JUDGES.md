@@ -24,10 +24,11 @@ DB row is labeled demo.
 
 ## Also worth opening
 
-- **Autopilot** (`/autopilot`): the autonomous agent — per-merchant
-  guardrails (caps, confidence floor, allowlisted categories; risk blocks
-  can never auto-execute), copilot brief with anomaly flags, and a
-  run-now button (needs the operator key — ask the team).
+- **Autopilot** (`/autopilot`): the autonomous AI — flip a merchant ON, seed a
+  failure, hit **Run agent now**, and watch it auto-recover safe cases while
+  skipping risky ones with reasons. No key needed in this sandbox. Per-merchant
+  guardrails (caps, confidence floor, allowlisted categories; risk blocks can
+  never auto-execute) plus the copilot brief with anomaly flags.
 - **Audit Trail** (`/audit`): recovery actions + append-only system log.
 - **API (all live):** `GET /api/dashboard/summary`,
   `GET /api/payment-cases`, `GET /api/demo/status`.
