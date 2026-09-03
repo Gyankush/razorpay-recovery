@@ -8,6 +8,13 @@
       "when": 1788377842189,
       "tag": "0000_fluffy_loki",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788449371311,
+      "tag": "0001_simple_marvel_boy",
+      "breakpoints": true
     }
   ]
 }

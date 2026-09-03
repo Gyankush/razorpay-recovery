@@ -91,36 +91,32 @@ export default function AuditPage() {
         setAuditLogs(auditData.logs || []);
       }
 
-      // Fetch recovery actions with case context from payment-cases
-      const casesRes = await fetch("/api/payment-cases");
+      // Fetch recovery actions with case context — in parallel with a
+      // concurrency cap instead of one sequential round-trip per case.
+      const casesRes = await fetch("/api/payment-cases?limit=100");
       if (casesRes.ok) {
         const casesData = await casesRes.json();
         const cases = casesData.cases || [];
 
-        // For each case, fetch its recovery actions
-        const allRecovery: RecoveryRow[] = [];
-        for (const c of cases) {
-          try {
+        const settled = await Promise.allSettled(
+          cases.map(async (c: any) => {
             const caseRes = await fetch(`/api/payment-cases/${c.id}`);
-            if (caseRes.ok) {
-              const caseDetail = await caseRes.json();
-              if (caseDetail.recovery_actions) {
-                for (const ra of caseDetail.recovery_actions) {
-                  allRecovery.push({
-                    ...ra,
-                    caseId: c.id,
-                    orderRef: c.externalOrderId,
-                    amount: c.amount_formatted,
-                    currency: c.currency,
-                    failureCategory: c.failureCategory,
-                  });
-                }
-              }
-            }
-          } catch {
-            // skip individual case fetch errors
-          }
-        }
+            if (!caseRes.ok) return [];
+            const caseDetail = await caseRes.json();
+            return (caseDetail.recovery_actions || []).map((ra: any) => ({
+              ...ra,
+              caseId: c.id,
+              orderRef: c.externalOrderId,
+              amount: c.amount_formatted,
+              currency: c.currency,
+              failureCategory: c.failureCategory,
+            }));
+          })
+        );
+        const allRecovery: RecoveryRow[] = settled.flatMap((r) =>
+          r.status === "fulfilled" ? r.value : []
+        );
+        allRecovery.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
         setRecoveryActions(allRecovery);
       }
     } catch (err) {

@@ -1,7 +1,18 @@
 import { db } from "@/db";
-import { paymentCases, orders, paymentAttempts, recoveryActions } from "@/db/schema";
+import { paymentCases, orders, paymentAttempts, recoveryActions, paymentLinks } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { diagnoseFromEntities } from "./diagnose";
+
+function formatAmount(amountCents: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+    }).format(amountCents / 100);
+  } catch {
+    return `${(amountCents / 100).toFixed(2)} ${currency}`;
+  }
+}
 
 export interface SupportPacket {
   case_id: string;
@@ -46,10 +57,24 @@ export async function generateSupportPacket(caseId: string): Promise<SupportPack
   const latestAction = actions[0] || null;
   const diagnosis = diagnoseFromEntities(c, latest, order);
 
-  const amountStr = order ? `$${(order.amount / 100).toFixed(2)} ${order.currency}` : "$0.00";
+  // Prefer the real ledgered payment link over any reconstruction.
+  const [storedLink] = await db
+    .select()
+    .from(paymentLinks)
+    .where(eq(paymentLinks.caseId, caseId))
+    .orderBy(desc(paymentLinks.createdAt))
+    .limit(1);
+
+  const amountStr = order
+    ? formatAmount(order.amount, order.currency)
+    : formatAmount(0, "USD");
   const extOrderId = order?.externalOrderId || "N/A";
   const providerPayId = latest?.providerPaymentId || "N/A";
-  const alternateLink = latestAction ? `https://rzp.io/i/rec_${latestAction.id.substring(0, 8)}` : null;
+  const alternateLink =
+    storedLink?.url ??
+    (latestAction && latestAction.status === "executed"
+      ? `https://rzp.io/i/rec_${latestAction.id.substring(0, 8)}`
+      : null);
 
   // 1. Customer-Safe Message (Empathetic, clear, no jargon)
   let customerMsg = `Hi there,\n\nThank you for reaching out regarding your order (${extOrderId}).\n\n`;

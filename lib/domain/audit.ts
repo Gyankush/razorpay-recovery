@@ -1,22 +1,27 @@
 import { db } from "@/db";
-import { auditLogs, type AuditLog, type NewAuditLog } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { auditLogs, type AuditLog } from "@/db/schema";
+import { eq, desc, and, gte, lte, type SQL } from "drizzle-orm";
 
 export interface LogAuditParams {
   actor: string;
   action: string;
   entity: string;
   entityId?: string | null;
-  before?: any;
-  after?: any;
+  before?: unknown;
+  after?: unknown;
   requestId?: string | null;
 }
 
 /**
- * Appends an immutable audit record to `audit_logs` for compliance,
- * transparency, and system forensics.
+ * Appends an immutable audit record to `audit_logs`.
+ *
+ * Returns the inserted row, or `null` when the write fails — callers MUST
+ * treat `null` as "audit hole, alert" and never as success. (Previously this
+ * returned a fake `{id:"error-log"}` row, which made compliance trails lie.)
  */
-export async function logAuditEvent(params: LogAuditParams): Promise<AuditLog> {
+export async function logAuditEvent(
+  params: LogAuditParams
+): Promise<AuditLog | null> {
   try {
     const [log] = await db
       .insert(auditLogs)
@@ -27,26 +32,22 @@ export async function logAuditEvent(params: LogAuditParams): Promise<AuditLog> {
         entityId: params.entityId || null,
         beforeJson: params.before ? JSON.stringify(params.before) : null,
         afterJson: params.after ? JSON.stringify(params.after) : null,
-        requestId: params.requestId || `req_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        requestId: params.requestId || null,
       })
       .returning();
 
-    console.log(`[Audit] ${params.actor} -> ${params.action} on ${params.entity}:${params.entityId || "N/A"}`);
+    console.log(
+      `[Audit] ${params.actor} -> ${params.action} on ${params.entity}:${params.entityId || "N/A"}`
+    );
     return log;
   } catch (error) {
-    console.error("Failed to write audit log:", error);
-    // Return placeholder so caller doesn't fail on audit log errors
-    return {
-      id: "error-log",
+    console.error("AUDIT HOLE — failed to write audit log:", error, {
       actor: params.actor,
       action: params.action,
       entity: params.entity,
-      entityId: params.entityId || null,
-      beforeJson: null,
-      afterJson: null,
-      requestId: null,
-      createdAt: new Date(),
-    };
+      entityId: params.entityId,
+    });
+    return null;
   }
 }
 
@@ -57,23 +58,21 @@ export async function getAuditHistory(options?: {
   entity?: string;
   actor?: string;
   limit?: number;
+  since?: Date;
+  until?: Date;
 }): Promise<AuditLog[]> {
-  const limit = options?.limit || 50;
+  const limit = Math.min(Math.max(options?.limit || 50, 1), 200);
+  const conditions: SQL[] = [];
+  if (options?.entity) conditions.push(eq(auditLogs.entity, options.entity));
+  if (options?.actor) conditions.push(eq(auditLogs.actor, options.actor));
+  if (options?.since) conditions.push(gte(auditLogs.createdAt, options.since));
+  if (options?.until) conditions.push(lte(auditLogs.createdAt, options.until));
 
-  if (options?.entity) {
+  if (conditions.length > 0) {
     return db
       .select()
       .from(auditLogs)
-      .where(eq(auditLogs.entity, options.entity))
-      .orderBy(desc(auditLogs.createdAt))
-      .limit(limit);
-  }
-
-  if (options?.actor) {
-    return db
-      .select()
-      .from(auditLogs)
-      .where(eq(auditLogs.actor, options.actor))
+      .where(and(...conditions))
       .orderBy(desc(auditLogs.createdAt))
       .limit(limit);
   }

@@ -5,6 +5,12 @@ import * as dotenv from "dotenv";
 dotenv.config({ path: ".env.local" });
 dotenv.config();
 
+if (!process.env.DATABASE_URL && process.env.NODE_ENV === "production") {
+  throw new Error(
+    "DATABASE_URL is missing. Refusing to use the local fallback in production."
+  );
+}
+
 export default defineConfig({
   schema: "./db/schema.ts",
   out: "./drizzle",

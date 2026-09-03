@@ -3,6 +3,8 @@ import { db } from "@/db";
 import { paymentCases, orders } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createRecoveryPaymentLink } from "@/lib/connectors/razorpay";
+import { logAuditEvent } from "@/lib/domain/audit";
+import { getRequestId, isUuid } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
@@ -12,21 +14,30 @@ export async function POST(
 ) {
   try {
     const caseId = params?.id;
-    if (!caseId) {
-      return NextResponse.json({ error: "Case ID required" }, { status: 400 });
+    if (!caseId || !isUuid(caseId)) {
+      return NextResponse.json({ error: "Valid case ID required" }, { status: 400 });
     }
+    const requestId = getRequestId(request, "plink");
 
-    let body: Record<string, any> = {};
+    let body: Record<string, unknown> = {};
     try {
       body = await request.json();
     } catch {
-      // Body may be empty or plain text
+      // Body may be empty; idempotency key check below will reject it
     }
 
-    // Guardrail: Require human approval
-    const approvedBy = body?.approved_by || "merchant_operator";
-    const idempotencyKey =
-      body?.idempotency_key || `case_${caseId}_rec_${Date.now()}`;
+    // Guardrail: Require human approval + client-supplied idempotency key
+    const approvedBy = String(
+      (body as Record<string, unknown>)?.approved_by || "merchant_operator"
+    ).slice(0, 255);
+    const idempotencyKey = (body as Record<string, unknown>)?.idempotency_key;
+
+    if (!idempotencyKey || String(idempotencyKey).length < 8) {
+      return NextResponse.json(
+        { error: "idempotency_key is required (min 8 chars, UUID recommended)" },
+        { status: 400 }
+      );
+    }
 
     // 1. Fetch case & order
     const [paymentCase] = await db
@@ -37,6 +48,13 @@ export async function POST(
 
     if (!paymentCase) {
       return NextResponse.json({ error: "Case not found" }, { status: 404 });
+    }
+
+    if (paymentCase.status === "resolved") {
+      return NextResponse.json(
+        { error: "Case is already resolved", case_id: paymentCase.id },
+        { status: 409 }
+      );
     }
 
     const [order] = await db
@@ -57,9 +75,34 @@ export async function POST(
       paymentCase.id,
       order.amount,
       order.currency,
-      idempotencyKey,
+      String(idempotencyKey),
       approvedBy
     );
+
+    await logAuditEvent({
+      actor: approvedBy,
+      action: recoveryResult.success
+        ? "action_create_payment_link"
+        : "action_create_payment_link_failed",
+      entity: "recovery_action",
+      entityId: recoveryResult.action.id,
+      after: recoveryResult.success
+        ? { url: recoveryResult.payment_link_url }
+        : { error: recoveryResult.error },
+      requestId,
+    });
+
+    if (!recoveryResult.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          case_id: paymentCase.id,
+          action: recoveryResult.action,
+          error: recoveryResult.error ?? "Failed to create recovery payment link",
+        },
+        { status: 502 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

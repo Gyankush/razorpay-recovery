@@ -167,9 +167,14 @@ export function generate50BenchmarkCases(): BenchmarkCase[] {
 }
 
 /**
- * Runs the 50-case held-out benchmark and updates `eval_cases` table.
+ * Runs the 50-case held-out benchmark.
+ * DB persistence is OPT-IN (`{persist:true}`) so routine benchmark runs —
+ * including the `/api/eval/run` endpoint default — don't flood the prod
+ * `eval_cases` table with 50 rows per click.
  */
-export async function runAIEvaluation(): Promise<EvaluationReport> {
+export async function runAIEvaluation(options?: {
+  persist?: boolean;
+}): Promise<EvaluationReport> {
   const startTime = Date.now();
   const benchmark = generate50BenchmarkCases();
 
@@ -213,18 +218,20 @@ export async function runAIEvaluation(): Promise<EvaluationReport> {
       });
     }
 
-    // Record into eval_cases table
-    try {
-      await db.insert(evalCases).values({
-        scenarioName: bCase.name,
-        inputJson: JSON.stringify(bCase.input),
-        expectedCategory: bCase.expectedCategory,
-        expectedAction: bCase.expectedAction,
-        actualJson: JSON.stringify(actual),
-        score: isCategoryMatch && isActionMatch ? "1.00" : "0.50",
-      });
-    } catch {
-      // ignore insert failure during fast test iterations
+    // Record into eval_cases table (opt-in: default is report-only)
+    if (options?.persist) {
+      try {
+        await db.insert(evalCases).values({
+          scenarioName: bCase.name,
+          inputJson: JSON.stringify(bCase.input),
+          expectedCategory: bCase.expectedCategory,
+          expectedAction: bCase.expectedAction,
+          actualJson: JSON.stringify(actual),
+          score: isCategoryMatch && isActionMatch ? "1.00" : "0.50",
+        });
+      } catch {
+        // ignore insert failure during fast test iterations
+      }
     }
   }
 

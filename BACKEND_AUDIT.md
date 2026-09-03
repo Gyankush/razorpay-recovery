@@ -1,6 +1,7 @@
 # PayRescue — Backend Audit (Real Problems Only)
 
 **Date:** 2026-09-03
+**Remediation:** All P0 + P1 items below were fixed the same day (commit `fix backend P0/H1 audit findings`, migration `drizzle/0001_simple_marvel_boy.sql` applied to Supabase via `drizzle-kit push`; `tsc` + `next build` + 15/15 smoke checks green). This document is kept as the historical record — each item notes its fix inline where short.
 **Scope:** `C:\Users\gyank\OneDrive\Desktop\Razorpay project` — Next.js 14 + Supabase Postgres (Drizzle) + Razorpay
 **Method:** Full code read of `app/api/**`, `lib/**`, `db/schema.ts`, `db/index.ts`, `drizzle/0000_fluffy_loki.sql`, `scripts/*`, `drizzle.config.ts`, `package.json`, `tsconfig.json`. Ran `npx tsc --noEmit` (passes, exit 0). Checked env var *presence only* (no secret values printed): `DATABASE_URL`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` all PRESENT. Compared migration SQL vs current schema. Did not run live DB writes.
 **Not in scope:** Frontend polish (handled separately), Razorpay dashboard config.

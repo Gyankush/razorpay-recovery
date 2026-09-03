@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { webhookEvents, paymentAttempts } from "@/db/schema";
@@ -9,10 +10,23 @@ import {
   openOrUpdateCase,
   ensureOrderForWebhook,
 } from "@/lib/domain/normalizer";
+import { normalizeCurrency } from "@/lib/http";
+
+const MAX_WEBHOOK_BYTES = 1_000_000; // 1 MB
 
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
+    if (rawBody.length > MAX_WEBHOOK_BYTES) {
+      console.warn(
+        `Webhook rejected: body too large (${rawBody.length} bytes)`
+      );
+      return NextResponse.json(
+        { error: "Payload too large" },
+        { status: 413 }
+      );
+    }
+
     const signature = req.headers.get("x-razorpay-signature");
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
@@ -34,7 +48,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Extract provider event ID from header or parsed body
+    // Extract provider event ID from header or parsed body.
+    // When Razorpay omits every identifier, derive a deterministic id from
+    // the body hash so redeliveries still dedupe instead of duplicating.
     let parsedBody: Record<string, any> = {};
     try {
       parsedBody = JSON.parse(rawBody);
@@ -47,7 +63,7 @@ export async function POST(req: NextRequest) {
       eventIdHeader ||
       parsedBody?.event_id ||
       parsedBody?.id ||
-      `evt_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      `evt_hash_${crypto.createHash("sha256").update(rawBody).digest("hex").slice(0, 32)}`;
 
     const eventType =
       parsedBody?.event ||
@@ -94,13 +110,29 @@ export async function POST(req: NextRequest) {
 
       if (paymentEntity) {
         const providerPaymentId = paymentEntity.id;
+        if (!providerPaymentId) {
+          // Stored above; 200 avoids a Razorpay retry storm for a payload
+          // we can never normalize. processed stays false for forensics.
+          return NextResponse.json(
+            { received: true, status: "stored_unprocessable", eventId: providerEventId },
+            { status: 200 }
+          );
+        }
+
         const externalOrderId =
           paymentEntity.order_id ||
           parsedBody?.payload?.order?.entity?.id ||
           `order_ext_${providerPaymentId}`;
 
-        const amount = Number(paymentEntity.amount) || 0;
-        const currency = paymentEntity.currency || "USD";
+        const rawAmount = Number(paymentEntity.amount);
+        if (!Number.isFinite(rawAmount) || rawAmount < 0) {
+          return NextResponse.json(
+            { received: true, status: "stored_unprocessable", eventId: providerEventId },
+            { status: 200 }
+          );
+        }
+        const amount = Math.floor(rawAmount);
+        const currency = normalizeCurrency(paymentEntity.currency, "USD");
         const errorCode = paymentEntity.error_code || null;
         const errorDescription =
           paymentEntity.error_description ||
@@ -128,12 +160,25 @@ export async function POST(req: NextRequest) {
               errorCode,
               errorDescription,
             })
+            .onConflictDoNothing({
+              target: paymentAttempts.providerPaymentId,
+            })
             .returning();
-          attempt = createdAttempt;
+          attempt =
+            createdAttempt ??
+            (
+              await db
+                .select()
+                .from(paymentAttempts)
+                .where(eq(paymentAttempts.providerPaymentId, providerPaymentId))
+                .limit(1)
+            )[0] ??
+            null;
         }
 
-        // If payment failed, open or update a payment case
-        if (canonicalState === "failed") {
+        // Open a case only when the stored state is genuinely failed —
+        // a stale `failed` redelivery must not reopen a captured payment.
+        if (attempt && canonicalState === "failed" && attempt.status === "failed") {
           const reason =
             errorDescription || errorCode || "Payment failed at gateway";
           await openOrUpdateCase(order.id, attempt.id, reason);
@@ -144,6 +189,35 @@ export async function POST(req: NextRequest) {
           .update(webhookEvents)
           .set({ processed: true })
           .where(eq(webhookEvents.providerEventId, providerEventId));
+      } else if (eventType.startsWith("refund.")) {
+        // Best-effort refund handling across Razorpay payload shapes.
+        const refundEntity =
+          parsedBody?.payload?.refund?.entity ??
+          parsedBody?.payload?.payment?.entity;
+        const refundPaymentId =
+          refundEntity?.payment_id ?? refundEntity?.id ?? null;
+        if (refundPaymentId) {
+          await updatePaymentState(
+            String(refundPaymentId),
+            "refunded",
+            refundEntity?.error_code ?? "REFUND_PROCESSED",
+            refundEntity?.error_description ?? "Refund processed at gateway"
+          );
+          await db
+            .update(webhookEvents)
+            .set({ processed: true })
+            .where(eq(webhookEvents.providerEventId, providerEventId));
+        } else {
+          console.warn(
+            `[Webhook Receiver] refund event ${providerEventId} has no identifiable payment; leaving unprocessed for manual review`
+          );
+        }
+      } else {
+        // Honest signal: stored but not yet actionable. A reconciler sweep
+        // should pick up processed=false rows — never silently claim done.
+        console.warn(
+          `[Webhook Receiver] event ${providerEventId} (${eventType}) stored without a payment entity; leaving unprocessed`
+        );
       }
     } catch (normalizerError) {
       console.error("Error during event normalization/case engine:", normalizerError);

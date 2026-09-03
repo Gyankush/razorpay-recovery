@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuditHistory } from "@/lib/domain/audit";
+import { safeJsonParse } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
@@ -9,16 +10,26 @@ export async function GET(req: NextRequest) {
     const entity = searchParams.get("entity") || undefined;
     const actor = searchParams.get("actor") || undefined;
     const limit = Number(searchParams.get("limit")) || 50;
+    const sinceRaw = searchParams.get("since");
+    const untilRaw = searchParams.get("until");
+    const since = sinceRaw ? new Date(sinceRaw) : undefined;
+    const until = untilRaw ? new Date(untilRaw) : undefined;
 
-    const logs = await getAuditHistory({ entity, actor, limit });
+    const logs = await getAuditHistory({
+      entity,
+      actor,
+      limit,
+      since: since && !Number.isNaN(since.getTime()) ? since : undefined,
+      until: until && !Number.isNaN(until.getTime()) ? until : undefined,
+    });
 
     return NextResponse.json({
       success: true,
       count: logs.length,
       logs: logs.map((l) => ({
         ...l,
-        before: l.beforeJson ? JSON.parse(l.beforeJson) : null,
-        after: l.afterJson ? JSON.parse(l.afterJson) : null,
+        before: safeJsonParse(l.beforeJson),
+        after: safeJsonParse(l.afterJson),
       })),
     });
   } catch (error) {

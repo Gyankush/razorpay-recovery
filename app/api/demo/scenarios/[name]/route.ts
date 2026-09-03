@@ -10,6 +10,7 @@ import {
   webhookEvents,
 } from "@/db/schema";
 import { logAuditEvent } from "@/lib/domain/audit";
+import { isAdminRequest, isProduction } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
@@ -17,17 +18,25 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { name: string } }
 ) {
-  return handleScenario(params?.name?.toLowerCase());
+  return handleScenario(request, params?.name?.toLowerCase());
 }
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { name: string } }
 ) {
-  return handleScenario(params?.name?.toLowerCase());
+  return handleScenario(request, params?.name?.toLowerCase());
 }
 
-async function handleScenario(scenarioName?: string) {
+async function handleScenario(request: NextRequest, scenarioName?: string) {
+  // Demo seeders write synthetic orders into the live tables. They must
+  // never be anonymously reachable in production.
+  if (isProduction() && !isAdminRequest(request)) {
+    return NextResponse.json(
+      { error: "Demo scenarios are disabled in production for non-admin callers" },
+      { status: 403 }
+    );
+  }
   try {
     const timestamp = Date.now();
 
