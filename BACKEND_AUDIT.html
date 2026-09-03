@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PayRescue — Backend Audit Report</title>
+<style>
+:root{--navy:#12304a;--blue:#1d6b9f;--cyan:#2ca7b8;--bg:#f4f7fa;--line:#dfe6ee;--ink:#17212b;--muted:#637181;--mint:#dff5ef;--amber:#fff1c7;--rose:#ffe5e5}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,-apple-system,"Segoe UI",Roboto,Ubuntu,sans-serif;line-height:1.6}
+.top{position:sticky;top:0;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top-inner{max-width:1080px;margin:0 auto;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}.logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--cyan),var(--navy));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 22px 64px}
+.hero{background:#fff;border:1px solid var(--line);border-radius:20px;padding:26px;box-shadow:0 8px 30px rgba(18,48,74,.06)}
+.hero h1{margin:.2em 0;font-size:30px;letter-spacing:-.02em;color:var(--navy)}
+.kicker{font-size:12px;font-weight:800;letter-spacing:.12em;color:var(--cyan);text-transform:uppercase}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:18px 0}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px}
+.card b{color:var(--navy)}.pill{display:inline-block;font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px;border:1px solid var(--line)}
+.p0{background:#ffe5e5;border-color:#f1bfc5;color:#8c3340}.p1{background:#fff1c7;border-color:#f1d885;color:#725311}.p2{background:#e9f4fc;border-color:#b9dbf4;color:#1d5d86}.p3{background:#f4f7fa;color:#637181}
+h2{color:var(--navy);margin-top:34px}h3{color:var(--navy)}
+.issue{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:12px 0}
+.issue code{background:#f4f7fa;border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:12px}
+.fix{background:#f8fafc;border-left:4px solid var(--cyan);padding:10px 14px;border-radius:0 10px 10px 0;margin-top:10px}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:13px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}th{background:#f7fafc;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+footer{color:var(--muted);font-size:12px;margin-top:30px}
+@media print{.top{display:none}.wrap{padding:0}}
+</style>
+</head>
+<body>
+<div class="top"><div class="top-inner">
+<div class="brand"><div class="logo">P</div><div><b style="color:#12304a">PayRescue</b> <span class="pill">Backend Audit</span><div style="font-size:12px;color:#637181">International Payment Recovery Copilot · 2026-09-03</div></div></div>
+<div><span class="pill p0">8 × P0 Critical</span> <span class="pill p1">10 × P1 High</span> <span class="pill p2">14 × P2</span></div>
+</div></div>
+<div class="wrap">
+<div class="hero">
+<div class="kicker">Revenue Recovery Pipeline · Audit Report</div>
+<h1>Backend Audit — real problems only</h1>
+<p style="color:#637181;max-width:70ch">Full read of <code>app/api/**</code>, <code>lib/**</code>, <code>db/schema.ts</code>, migrations, and scripts. <code>tsc --noEmit</code> passes — these are logic, data, and security bugs, not type errors. Env vars checked for presence only; no secrets printed.</p>
+<div class="grid">
+<div class="card"><b>8 × P0 Critical</b><br/><span style="color:#637181;font-size:13px">Fix before any public deploy. Money-truth, mass-update, open seeds.</span></div>
+<div class="card"><b>Migration drift</b><br/><span style="color:#637181;font-size:13px"><code>drizzle/0000_fluffy_loki.sql</code> has 5 tables; code expects 13. Recon / audit / eval crash on fresh DB.</span></div>
+<div class="card"><b>Fake recovery links</b><br/><span style="color:#637181;font-size:13px"><code>lib/connectors/razorpay.ts:73-80</code> returns success:true with a mock URL on SDK failure and marks case resolved.</span></div>
+<div class="card"><b>Zero auth on mutations</b><br/><span style="color:#637181;font-size:13px">Actions, batch execute, recon, eval, demo seeds accept anonymous calls; <code>approved_by</code> is free text.</span></div>
+</div>
+<p style="font-size:13px;color:#637181">Full detail lives in <code>BACKEND_AUDIT.md</code> in this folder. This HTML is the shareable summary.</p>
+</div>
+
+<h2><span class="pill p0">P0</span> Fix these 8 first</h2>
+
+<div class="issue"><b>1 · Migration drift — DB will crash.</b> <code>drizzle/0000_fluffy_loki.sql</code> vs <code>db/schema.ts</code>. Missing <code>customers, diagnoses, payment_links, settlements, recon_items, audit_logs, eval_cases</code> + columns.<div class="fix"><b>Fix:</b> <code>npm run db:generate</code> → review SQL → <code>npm run db:push</code> on staging → verify 13 tables → commit migration + CI <code>drizzle-kit check</code>.</div></div>
+<div class="issue"><b>2 · Recovery links lie on SDK failure.</b> <code>lib/connectors/razorpay.ts:73-102</code> fabricates <code>https://rzp.io/i/plink_test_…</code> and marks case <code>resolved</code>.<div class="fix"><b>Fix:</b> return <code>success:false</code> / HTTP 502, keep case open, store error in <code>resultJson</code>. Only resolve on verified <code>payment.captured</code>.</div></div>
+<div class="issue"><b>3 · Batch recovery hits risk blocks.</b> <code>app/api/recovery-runs/route.ts:18-32</code> processes all <code>open</code> cases, uncapped <code>max_batch_size</code>.<div class="fix"><b>Fix:</b> allowlist <code>send_alternate_payment_link</code> minus <code>risk_block</code>, clamp batch ≤25, deterministic idempotency keys, admin auth.</div></div>
+<div class="issue"><b>4 · Connector test mass-updates merchants + leaks key.</b> <code>app/api/connectors/razorpay/test/route.ts:44,52</code> — <code>update(merchants).set({mode:"test"})</code> with no WHERE; raw <code>keyId</code> in audit.<div class="fix"><b>Fix:</b> update by id only; mask keys in logs.</div></div>
+<div class="issue"><b>5 · Silent localhost DB fallback.</b> <code>db/index.ts:11-13</code>, <code>drizzle.config.ts:13-15</code>.<div class="fix"><b>Fix:</b> throw in production when <code>DATABASE_URL</code> missing; log host (not password) on boot.</div></div>
+<div class="issue"><b>6 · Demo seeds open in prod.</b> <code>app/api/demo/scenarios/[name]/route.ts</code>.<div class="fix"><b>Fix:</b> 403 in production unless admin secret; preferably delete route before launch.</div></div>
+<div class="issue"><b>7 · <code>payment_links</code> never written.</b> Schema exists, zero inserts; support packet fabricates URL.<div class="fix"><b>Fix:</b> transactional insert of <code>recoveryActions</code> + <code>paymentLinks</code>; packet reads stored URL; enforce expiry.</div></div>
+<div class="issue"><b>8 · No authN/Z.</b> All mutating routes trust <code>approved_by/operator</code> from body.<div class="fix"><b>Fix:</b> <code>middleware.ts</code> session or <code>x-admin-secret</code>; propagate server-side actor to audit.</div></div>
+
+<h2><span class="pill p1">P1</span> High — wrong money, broken guarantees, DoS</h2>
+<table><thead><tr><th>#</th><th>Problem</th><th>Where</th><th>Fix</th></tr></thead><tbody>
+<tr><td>H1</td><td>Idempotency check-then-insert race → 500 instead of existing action</td><td><code>lib/connectors/razorpay.ts:27-45</code></td><td><code>ON CONFLICT DO NOTHING</code> + catch 23505</td></tr>
+<tr><td>H2</td><td>Random <code>providerEventId</code> fallback defeats dedupe</td><td><code>webhooks/route.ts:46-50</code></td><td>Require stable id or hash body; 400 if missing</td></tr>
+<tr><td>H3</td><td>Non-payment webhooks stuck <code>processed:false</code> forever</td><td><code>webhooks/route.ts:95-147</code></td><td>Handle refunds/settlements + retry cron</td></tr>
+<tr><td>H4</td><td>Terminal states can regress (captured→failed)</td><td><code>normalizer.ts:69-109</code></td><td>Allowed-transition map; ignore stale</td></tr>
+<tr><td>H5</td><td>No uniqueness/indexes; duplicate orders; full scans</td><td><code>db/schema.ts</code></td><td>Unique + indexes + pagination</td></tr>
+<tr><td>H6</td><td>Multi-currency summed as $; recovered counted before paid</td><td><code>dashboard/summary/route.ts</code></td><td>Group by currency; count only on capture</td></tr>
+<tr><td>H7</td><td>Cases list loads all attempts (OOM)</td><td><code>payment-cases/route.ts:31-42</code></td><td>Pagination / lateral join</td></tr>
+<tr><td>H8</td><td>Eval writes 50 rows to prod per run; self-testing benchmark</td><td><code>evaluator.ts:217-228</code></td><td>Isolate eval writes; human-reviewed fixtures</td></tr>
+<tr><td>H9</td><td>Audit returns fake <code>id:error-log</code> on failure</td><td><code>lib/domain/audit.ts:37-49</code></td><td>Throw; DB append-only; propagate requestId</td></tr>
+<tr><td>H10</td><td>Recon N+1, unused map, flapping pending count</td><td><code>reconciliation.ts:30-140</code></td><td>Batch load; unique; date window</td></tr>
+</tbody></table>
+
+<h2><span class="pill p2">P2</span> Medium — contracts & operability</h2>
+<p style="font-size:14px">Two failure taxonomies diverge (normalizer vs AI diagnose) · duplicate recovery routes with different defaults · <code>Date.now()</code> idempotency keys · <code>openOrUpdateCase</code> ignores <code>action_required</code> · support packet hardcodes <code>$</code> · audit <code>JSON.parse</code> without guard · audit filter is entity <b>or</b> actor (never both) · zero Zod validation · unbounded <code>diagnoses</code> inserts · phantom zero-amount orders · hardcoded timeline steps · pooler <code>prepare:false</code> missing · eval half-credit scoring confusion · secrets in error messages. See <code>BACKEND_AUDIT.md</code> M1–M14 for file:line + fixes.</p>
+
+<h2>Reproduce safely</h2>
+<div class="issue"><code>npx tsc --noEmit</code> passes · <code>npx drizzle-kit generate --dry-run</code> shows missing tables · <code>grep -rn "ON CONFLICT" app lib</code> → none · <code>grep -rn "paymentLinks" lib app/api</code> → reads only · <code>grep -rn "ADMIN_SECRET\|getServerSession" app/api middleware.ts</code> → none.</div>
+
+<footer>PayRescue · Backend audit · Generated 2026-09-03 · Sources cited as <code>file:line</code> · Pair with <code>BACKEND_AUDIT.md</code> for the normative list.</footer>
+</div>
+</body>
+</html>

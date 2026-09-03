@@ -1,0 +1,1104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Implementation-ready PRD for PayRescue, an international payment recovery copilot for the Razorpay AI Buildathon.">
+  <title>PayRescue — International Payment Recovery PRD</title>
+  <style>
+    :root {
+      --ink: #17212b;
+      --muted: #637181;
+      --soft: #f4f7fa;
+      --panel: #ffffff;
+      --line: #dfe6ee;
+      --navy: #12304a;
+      --blue: #1d6b9f;
+      --cyan: #2ca7b8;
+      --mint: #dff5ef;
+      --amber: #fff1c7;
+      --rose: #ffe5e5;
+      --lavender: #eeeaff;
+      --shadow: 0 18px 50px rgba(18, 48, 74, .08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background: var(--soft);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.58;
+    }
+
+    a { color: var(--blue); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { color: var(--navy); }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 256px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 28px 18px;
+      background: var(--navy);
+      color: #d9e9f2;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin: 0 10px 28px;
+      color: white;
+      font-weight: 800;
+      letter-spacing: -.03em;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 11px;
+      background: linear-gradient(135deg, #5be0cd, #70aef3);
+      color: var(--navy);
+      font-weight: 900;
+      box-shadow: 0 7px 20px rgba(91, 224, 205, .22);
+    }
+
+    .brand small {
+      display: block;
+      margin-top: 2px;
+      color: #9bb6c8;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+
+    .side-label {
+      margin: 0 10px 8px;
+      color: #7f9caf;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .side-nav { display: grid; gap: 3px; margin-bottom: 26px; }
+
+    .side-nav a {
+      display: block;
+      padding: 8px 10px;
+      border-left: 2px solid transparent;
+      border-radius: 0 9px 9px 0;
+      color: #b9ceda;
+      font-size: 12px;
+      text-decoration: none;
+      transition: background .2s ease, color .2s ease, border-color .2s ease;
+    }
+
+    .side-nav a:hover,
+    .side-nav a.active {
+      border-color: #63dfcf;
+      background: rgba(255,255,255,.08);
+      color: white;
+    }
+
+    .side-note {
+      margin: 22px 8px 0;
+      padding: 14px;
+      border: 1px solid rgba(196, 229, 240, .16);
+      border-radius: 14px;
+      background: rgba(255,255,255,.055);
+      color: #a9c2d1;
+      font-size: 11px;
+    }
+
+    .side-note strong { display: block; color: white; font-size: 12px; margin-bottom: 5px; }
+
+    main { min-width: 0; }
+
+    .content {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      padding: 34px clamp(20px, 4vw, 62px) 72px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: clamp(30px, 5vw, 64px);
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 88% 14%, rgba(96, 221, 205, .37), transparent 26%),
+        radial-gradient(circle at 74% 112%, rgba(83, 151, 235, .28), transparent 34%),
+        linear-gradient(132deg, #0e2c45 0%, #164b66 58%, #18626d 100%);
+      color: white;
+      box-shadow: var(--shadow);
+    }
+
+    .hero::after {
+      position: absolute;
+      right: -90px;
+      bottom: -120px;
+      width: 360px;
+      height: 360px;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 50%;
+      box-shadow: 0 0 0 34px rgba(255,255,255,.03), 0 0 0 68px rgba(255,255,255,.025), 0 0 0 102px rgba(255,255,255,.018);
+      content: "";
+    }
+
+    .hero > * { position: relative; z-index: 1; }
+
+    .eyebrow {
+      margin-bottom: 13px;
+      color: #84ebdc;
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, h4 { margin: 0; letter-spacing: -.04em; line-height: 1.13; }
+    h1 { max-width: 790px; font-size: clamp(38px, 6vw, 72px); }
+    h2 { margin-bottom: 15px; font-size: clamp(25px, 3vw, 37px); color: var(--navy); }
+    h3 { margin-bottom: 10px; font-size: 20px; color: var(--navy); }
+    h4 { margin-bottom: 7px; font-size: 15px; color: var(--navy); letter-spacing: -.02em; }
+
+    .hero p {
+      max-width: 720px;
+      margin: 20px 0 0;
+      color: #d9f1f3;
+      font-size: clamp(16px, 2vw, 20px);
+    }
+
+    .hero-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
+
+    .tag, .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: white;
+      color: var(--navy);
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .hero .tag { border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.1); color: #edfaff; }
+    .tag.mint { border-color: #b6e7dc; background: var(--mint); color: #136456; }
+    .tag.amber { border-color: #f1d885; background: var(--amber); color: #725311; }
+    .tag.blue { border-color: #b9dbf4; background: #e9f4fc; color: #1d5d86; }
+    .tag.rose { border-color: #f1bfc5; background: var(--rose); color: #8c3340; }
+
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 9px 15px;
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 10px;
+      background: white;
+      color: var(--navy);
+      font-size: 12px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .button.secondary { background: rgba(255,255,255,.1); color: white; }
+    .button:hover { transform: translateY(-1px); color: var(--navy); }
+    .button.secondary:hover { color: white; }
+
+    .section { scroll-margin-top: 24px; margin-top: 64px; }
+    .section-lead { max-width: 800px; color: var(--muted); font-size: 16px; }
+    .section-kicker { margin-bottom: 7px; color: var(--cyan); font-size: 11px; font-weight: 850; letter-spacing: .12em; text-transform: uppercase; }
+
+    .grid { display: grid; gap: 16px; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .card {
+      min-width: 0;
+      padding: 21px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: 0 9px 25px rgba(18,48,74,.035);
+    }
+
+    .card p:last-child { margin-bottom: 0; }
+    .card p, .card li { color: var(--muted); font-size: 13px; }
+    .card ul, .card ol { margin: 10px 0 0; padding-left: 19px; }
+    .card li + li { margin-top: 5px; }
+
+    .callout {
+      margin: 18px 0;
+      padding: 19px 21px;
+      border-left: 4px solid var(--cyan);
+      border-radius: 0 14px 14px 0;
+      background: #eaf8f6;
+    }
+
+    .callout.amber { border-color: #d49a1b; background: #fff8df; }
+    .callout.rose { border-color: #d96573; background: #fff0f0; }
+    .callout.blue { border-color: #4a91c7; background: #edf6fc; }
+    .callout strong { color: var(--navy); }
+    .callout p { margin: 5px 0 0; color: #4e6574; font-size: 14px; }
+
+    .mini-label { margin-bottom: 6px; color: var(--cyan); font-size: 10px; font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
+    .big-number { color: var(--navy); font-size: 30px; font-weight: 900; letter-spacing: -.05em; }
+    .small { color: var(--muted); font-size: 12px; }
+
+    .table-wrap { overflow-x: auto; margin: 18px 0; border: 1px solid var(--line); border-radius: 15px; background: white; }
+    table { width: 100%; border-collapse: collapse; min-width: 680px; }
+    th, td { padding: 13px 15px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 12px; }
+    th { background: #f7fafc; color: var(--navy); font-size: 10px; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+    td { color: var(--muted); }
+    td strong { color: var(--navy); }
+    tr:last-child td { border-bottom: 0; }
+
+    .flow { display: grid; grid-template-columns: repeat(6, minmax(110px, 1fr)); gap: 10px; margin: 22px 0; }
+    .flow-step { position: relative; min-height: 135px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: white; }
+    .flow-step::after { position: absolute; top: 48px; right: -14px; color: #91a7b8; content: "→"; font-size: 19px; font-weight: 700; }
+    .flow-step:last-child::after { display: none; }
+    .step-number { display: grid; place-items: center; width: 25px; height: 25px; margin-bottom: 12px; border-radius: 8px; background: var(--navy); color: white; font-size: 11px; font-weight: 850; }
+    .flow-step h4 { font-size: 13px; }
+    .flow-step p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
+
+    .screen {
+      display: grid;
+      grid-template-columns: 102px minmax(0, 1fr);
+      gap: 17px;
+      align-items: start;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .screen:last-child { border-bottom: 0; }
+    .screen-id { display: grid; place-items: center; min-height: 54px; border-radius: 13px; background: var(--lavender); color: #5e52aa; font-size: 12px; font-weight: 850; }
+    .screen p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+    .screen .tag { margin-top: 9px; }
+
+    pre {
+      position: relative;
+      overflow-x: auto;
+      margin: 13px 0 0;
+      padding: 17px;
+      border: 1px solid #233e53;
+      border-radius: 13px;
+      background: #102536;
+      color: #d8f0ed;
+      font: 12px/1.65 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+
+    .code-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; color: var(--navy); font-size: 12px; font-weight: 850; }
+    .copy { cursor: pointer; padding: 5px 9px; border: 1px solid var(--line); border-radius: 7px; background: white; color: var(--blue); font-size: 10px; font-weight: 800; }
+    .copy:hover { background: #eef7fc; }
+
+    .architecture { display: grid; gap: 9px; margin: 20px 0; }
+    .arch-row { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; align-items: center; }
+    .arch-box { padding: 12px 13px; border: 1px solid var(--line); border-radius: 11px; background: white; color: var(--navy); font-size: 12px; font-weight: 800; }
+    .arch-box.accent { border-color: #a9ddd4; background: var(--mint); }
+    .arch-detail { color: var(--muted); font-size: 12px; }
+
+    .checklist { display: grid; gap: 8px; margin-top: 11px; }
+    .check { display: flex; gap: 9px; align-items: flex-start; color: var(--muted); font-size: 13px; }
+    .check::before { flex: 0 0 auto; display: grid; place-items: center; width: 19px; height: 19px; border-radius: 6px; background: var(--mint); color: #147465; content: "✓"; font-size: 11px; font-weight: 900; }
+
+    details { border: 1px solid var(--line); border-radius: 12px; background: white; }
+    details + details { margin-top: 9px; }
+    summary { cursor: pointer; padding: 14px 16px; color: var(--navy); font-size: 13px; font-weight: 800; }
+    details > div { padding: 0 16px 16px; color: var(--muted); font-size: 13px; }
+
+    .timeline { display: grid; gap: 0; margin-top: 15px; }
+    .phase { display: grid; grid-template-columns: 112px 1fr; gap: 17px; position: relative; padding: 0 0 22px; }
+    .phase:not(:last-child)::before { position: absolute; top: 31px; left: 13px; bottom: 0; width: 1px; background: #bdd2df; content: ""; }
+    .phase-time { color: var(--cyan); font-size: 11px; font-weight: 850; }
+    .phase-dot { position: absolute; top: 2px; left: 7px; width: 13px; height: 13px; border: 3px solid var(--soft); border-radius: 50%; background: var(--cyan); box-shadow: 0 0 0 1px #91c9cc; }
+    .phase-content { padding-left: 20px; }
+    .phase-content h4 { margin-bottom: 5px; }
+    .phase-content p { margin: 0; color: var(--muted); font-size: 13px; }
+
+    .footer { margin-top: 70px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+    .footer strong { color: var(--navy); }
+
+    @media (max-width: 980px) {
+      .app-shell { grid-template-columns: 1fr; }
+      .sidebar { position: static; height: auto; padding: 17px 16px 12px; }
+      .brand { margin-bottom: 15px; }
+      .side-label, .side-note { display: none; }
+      .side-nav { display: flex; overflow-x: auto; gap: 3px; margin: 0; padding-bottom: 3px; }
+      .side-nav a { flex: 0 0 auto; border-left: 0; border-bottom: 2px solid transparent; border-radius: 8px 8px 0 0; padding: 8px 10px; }
+      .side-nav a:hover, .side-nav a.active { border-color: #63dfcf; }
+      .content { padding-top: 22px; }
+    }
+
+    @media (max-width: 760px) {
+      .grid.two, .grid.three, .grid.four { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .flow-step::after { display: none; }
+      .arch-row { grid-template-columns: 1fr; gap: 4px; }
+      .screen { grid-template-columns: 72px minmax(0, 1fr); gap: 11px; }
+      .hero { border-radius: 20px; }
+    }
+
+    @media print {
+      .sidebar { display: none; }
+      .app-shell { display: block; }
+      .content { width: 100%; padding: 0; }
+      .hero, .card, .table-wrap { box-shadow: none; break-inside: avoid; }
+      .section { margin-top: 35px; }
+      a { color: inherit; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="PRD navigation">
+      <div class="brand">
+        <div class="brand-mark">P</div>
+        <div>PayRescue<small>Buildathon PRD</small></div>
+      </div>
+      <div class="side-label">Document map</div>
+      <nav class="side-nav">
+        <a href="#overview">Overview</a>
+        <a href="#scope">Scope</a>
+        <a href="#users">Users</a>
+        <a href="#flows">Flows</a>
+        <a href="#frontend">Frontend</a>
+        <a href="#backend">Backend</a>
+        <a href="#ai">AI logic</a>
+        <a href="#api">API contract</a>
+        <a href="#build">Build plan</a>
+        <a href="#testing">Testing</a>
+        <a href="#sources">Sources</a>
+      </nav>
+      <div class="side-note">
+        <strong>Read this in order</strong>
+        Start with the MVP boundary, then build the payment case flow before adding batch recovery or future agent commerce.
+      </div>
+    </aside>
+
+    <main>
+      <div class="content">
+        <section class="hero" id="overview">
+          <div class="eyebrow">Razorpay AI Buildathon · Implementation-ready PRD</div>
+          <h1>International Payment Recovery Copilot</h1>
+          <p>PayRescue helps Indian SaaS and D2C merchants understand why an international payment failed, choose the safest recovery step, and prove what happened later.</p>
+          <div class="hero-tags">
+            <span class="tag">Primary: AI Revenue Recovery</span>
+            <span class="tag">Secondary: AI Finance Controller</span>
+            <span class="tag">Test mode + synthetic data</span>
+            <span class="tag">72-hour MVP</span>
+          </div>
+          <div class="hero-actions">
+            <a class="button" href="#scope">Start with the MVP</a>
+            <a class="button secondary" href="#build">See the build sequence</a>
+          </div>
+        </section>
+
+        <section class="section" id="decision">
+          <div class="section-kicker">The product in one sentence</div>
+          <h2>Every failed payment gets a reason, a safe next step, and an evidence trail.</h2>
+          <p class="section-lead">A merchant should not have to read raw gateway codes, search through webhook logs, or ask a customer to retry blindly. PayRescue turns payment events into a case that a founder, support agent, or finance operator can understand.</p>
+          <div class="callout">
+            <strong>Recommended positioning</strong>
+            <p>“We do not blindly retry international payments. We explain what happened, recover revenue through a bounded action, and reconcile the result.”</p>
+          </div>
+          <div class="grid four">
+            <div class="card"><div class="mini-label">Who</div><div class="big-number">SMBs</div><div class="small">Indian SaaS, D2C, education, travel, and digital services merchants selling globally.</div></div>
+            <div class="card"><div class="mini-label">Pain</div><div class="big-number">Unknown</div><div class="small">The merchant sees “failed,” but not whether the customer, issuer, 3DS flow, risk rule, or webhook caused it.</div></div>
+            <div class="card"><div class="mini-label">Action</div><div class="big-number">Safe</div><div class="small">Recommend an alternate payment link, customer action, cooldown, or escalation with guardrails.</div></div>
+            <div class="card"><div class="mini-label">Proof</div><div class="big-number">Audit</div><div class="small">Show payment events, decisions, actions, and final settlement or refund status.</div></div>
+          </div>
+        </section>
+
+        <section class="section" id="scope">
+          <div class="section-kicker">01 · Scope and success</div>
+          <h2>Build one complete workflow before adding more features.</h2>
+          <p class="section-lead">The MVP is a single-merchant control room for payment cases. The demo can use Razorpay Test Mode and a deterministic synthetic event generator. It must feel like a complete product even if it does not move live money.</p>
+
+          <div class="grid two">
+            <div class="card">
+              <h3>In scope for the hackathon</h3>
+              <div class="checklist">
+                <div class="check">Connect one Razorpay Test Mode account or load a seeded synthetic dataset.</div>
+                <div class="check">Receive, verify, store, deduplicate, and replay webhook events.</div>
+                <div class="check">Normalize events into a simple payment lifecycle.</div>
+                <div class="check">Create an explainable failure diagnosis for each payment case.</div>
+                <div class="check">Recommend a next step and require approval before any money-related action.</div>
+                <div class="check">Create a test Payment Link as the main recovery action.</div>
+                <div class="check">Show an event timeline, recovery history, and reconciliation status.</div>
+                <div class="check">Evaluate the agent on at least 50 held-out synthetic cases.</div>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Out of scope for the MVP</h3>
+              <div class="checklist">
+                <div class="check">Live production payment actions or automatic refunds.</div>
+                <div class="check">Direct card data storage, card-number handling, or PCI scope expansion.</div>
+                <div class="check">A new payment gateway or a replacement for Razorpay’s risk engine.</div>
+                <div class="check">Full chargeback adjudication, lending, tax filing, or KYC decisions.</div>
+                <div class="check">WhatsApp, voice, email, and SMS delivery all at once.</div>
+                <div class="check">Multi-tenant enterprise permissions and billing.</div>
+                <div class="check">An autonomous agent that can retry or refund without approval.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="callout amber">
+            <strong>Why this scope is important</strong>
+            <p>The official buildathon brief expects explainable, bounded money actions, an audit trail, failure handling, and measured performance. These are core product features—not presentation polish.</p>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Goal</th><th>MVP target</th><th>How to demonstrate it</th></tr></thead>
+              <tbody>
+                <tr><td><strong>Diagnose</strong></td><td>Classify the main failure category and confidence.</td><td>Run known synthetic scenarios and compare the answer with the hidden label.</td></tr>
+                <tr><td><strong>Recover</strong></td><td>Suggest the least risky action that could save the sale.</td><td>Show approval, generated test Payment Link, expiry, and final status.</td></tr>
+                <tr><td><strong>Reconcile</strong></td><td>Match orders, payments, refunds, and settlements.</td><td>Show matched items and a short, explainable exception queue.</td></tr>
+                <tr><td><strong>Protect</strong></td><td>Prevent duplicate charges and unsafe retries.</td><td>Replay duplicate/out-of-order webhooks and prove idempotent behavior.</td></tr>
+                <tr><td><strong>Explain</strong></td><td>Make the outcome understandable to a non-engineer.</td><td>Show a customer-safe summary and an internal technical evidence view.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section" id="users">
+          <div class="section-kicker">02 · Users and jobs</div>
+          <h2>Design for the person who owns the lost sale.</h2>
+          <div class="grid three">
+            <div class="card">
+              <span class="tag mint">Primary user</span>
+              <h3>Merchant operator</h3>
+              <p>Runs payments, support, and revenue operations at a small or mid-sized business.</p>
+              <h4>Job to be done</h4>
+              <p>“Tell me why this customer could not pay and what I can safely do next.”</p>
+              <h4>Needs</h4>
+              <p>Simple language, revenue impact, one-click evidence, and no dangerous guesswork.</p>
+            </div>
+            <div class="card">
+              <span class="tag blue">Secondary user</span>
+              <h3>Support agent</h3>
+              <p>Answers a customer who says money was debited, payment failed, or the checkout did not work.</p>
+              <h4>Job to be done</h4>
+              <p>“Give me a trustworthy answer without asking the customer for the same details again.”</p>
+              <h4>Needs</h4>
+              <p>A timeline, safe customer wording, refund expectation, and escalation packet.</p>
+            </div>
+            <div class="card">
+              <span class="tag amber">Secondary user</span>
+              <h3>Finance operator</h3>
+              <p>Checks whether transactions, refunds, fees, and settlements agree.</p>
+              <h4>Job to be done</h4>
+              <p>“Explain every rupee or dollar that does not match the bank or ledger.”</p>
+              <h4>Needs</h4>
+              <p>Matched records, exception ownership, exportable evidence, and deterministic calculations.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="flows">
+          <div class="section-kicker">03 · Product flow</div>
+          <h2>From a failed payment to a resolved case.</h2>
+          <div class="flow">
+            <div class="flow-step"><div class="step-number">1</div><h4>Receive</h4><p>Accept a webhook or seed a synthetic payment attempt.</p></div>
+            <div class="flow-step"><div class="step-number">2</div><h4>Normalize</h4><p>Convert provider events into one internal payment timeline.</p></div>
+            <div class="flow-step"><div class="step-number">3</div><h4>Diagnose</h4><p>Combine rules, history, and an LLM explanation.</p></div>
+            <div class="flow-step"><div class="step-number">4</div><h4>Recommend</h4><p>Choose the safest next step, confidence, and stopping rule.</p></div>
+            <div class="flow-step"><div class="step-number">5</div><h4>Approve</h4><p>A human reviews any action involving a customer or money.</p></div>
+            <div class="flow-step"><div class="step-number">6</div><h4>Verify</h4><p>Watch for the result and reconcile it with the ledger.</p></div>
+          </div>
+
+          <div class="grid two">
+            <div class="card">
+              <h3>Core scenario: international decline</h3>
+              <ol>
+                <li>A $49 SaaS checkout is attempted from the United Kingdom.</li>
+                <li>Razorpay returns a failed attempt or the attempt times out.</li>
+                <li>PayRescue shows the customer, country, currency, method, error category, and event history.</li>
+                <li>The agent says: “This looks like a customer-action or issuer issue. Do not retry immediately.”</li>
+                <li>The operator approves creation of a new test Payment Link with an expiry.</li>
+                <li>The customer completes the alternate flow.</li>
+                <li>PayRescue links the successful payment to the original order without creating a duplicate order.</li>
+              </ol>
+            </div>
+            <div class="card">
+              <h3>Core scenario: ambiguous debit</h3>
+              <ol>
+                <li>The customer says their card was charged, but the checkout says failed.</li>
+                <li>PayRescue looks for captured, failed, refund, and webhook events.</li>
+                <li>If the state is unresolved, it labels the case <strong>unknown</strong> rather than inventing an answer.</li>
+                <li>The customer response gives a reference ID and tells them what happens next.</li>
+                <li>The support packet includes the raw event IDs for escalation.</li>
+              </ol>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="frontend">
+          <div class="section-kicker">04 · Frontend PRD</div>
+          <h2>Frontend: build a calm control room, not a wall of gateway codes.</h2>
+          <p class="section-lead">Recommended implementation: React or Next.js with TypeScript. Use a responsive layout, a query library for server data, and a small chart library only where it helps explain recovery and reconciliation.</p>
+
+          <div class="card">
+            <div class="screen">
+              <div class="screen-id">F-01</div>
+              <div><h3>Demo setup</h3><p>Choose Test Mode or Synthetic Demo. Show connection health, last event received, and a button to seed realistic cases.</p><span class="tag blue">Route: /setup</span></div>
+            </div>
+            <div class="screen">
+              <div class="screen-id">F-02</div>
+              <div><h3>Recovery control room</h3><p>Top row: money at risk, recoverable cases, recovered amount, unresolved cases. Main area: cases grouped by urgency and recommended action. A date/country/currency filter keeps the view useful.</p><span class="tag mint">Route: /dashboard</span></div>
+            </div>
+            <div class="screen">
+              <div class="screen-id">F-03</div>
+              <div><h3>Payment case detail</h3><p>Show a plain-English summary, confidence, amount at risk, customer-safe message, event timeline, provider details, prior attempts, and a visible “Why this recommendation?” panel.</p><span class="tag mint">Route: /cases/:id</span></div>
+            </div>
+            <div class="screen">
+              <div class="screen-id">F-04</div>
+              <div><h3>Recovery approval</h3><p>Show the proposed action, what it will do, possible downside, expiry, duplicate-protection check, and Approve / Reject / Escalate actions. Never hide the fact that the action needs approval.</p><span class="tag amber">Modal or route: /cases/:id/recover</span></div>
+            </div>
+            <div class="screen">
+              <div class="screen-id">F-05</div>
+              <div><h3>Recovery batch</h3><p>For a group of failed payments, show total amount at risk, selected policy, eligibility count, skipped cases, progress, and a downloadable result list. Keep batch execution manual for the MVP.</p><span class="tag blue">Route: /recovery</span></div>
+            </div>
+            <div class="screen">
+              <div class="screen-id">F-06</div>
+              <div><h3>Reconciliation</h3><p>Display matched and unmatched records. Clicking an exception opens the payment, refund, settlement, fee, tax, and bank references that explain the difference.</p><span class="tag amber">Route: /reconciliation</span></div>
+            </div>
+            <div class="screen">
+              <div class="screen-id">F-07</div>
+              <div><h3>Support packet</h3><p>Give support a customer-safe response, internal explanation, payment references, expected next event, and a copy button. Mask personal data by default.</p><span class="tag blue">Route: /support/:id</span></div>
+            </div>
+            <div class="screen">
+              <div class="screen-id">F-08</div>
+              <div><h3>Audit and settings</h3><p>Show test/live mode label, webhook health, connector configuration status, action policy, model version, and an immutable activity log.</p><span class="tag rose">Route: /settings and /audit</span></div>
+            </div>
+          </div>
+
+          <div class="grid two" style="margin-top:16px">
+            <div class="card">
+              <h3>Important visual states</h3>
+              <ul>
+                <li><strong>Recoverable:</strong> green accent, clear next action, money at risk visible.</li>
+                <li><strong>Needs customer action:</strong> amber accent, no automatic retry.</li>
+                <li><strong>Risk blocked:</strong> red accent, no bypass button; escalate with evidence.</li>
+                <li><strong>Unknown:</strong> neutral accent, honest missing-data message.</li>
+                <li><strong>Resolved:</strong> show the original failure and the recovery result together.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Frontend engineering rules</h3>
+              <ul>
+                <li>Every money action has a confirmation state and an audit entry.</li>
+                <li>Use skeletons for loading and a retryable error state for API failures.</li>
+                <li>Never display a successful payment only because a browser callback returned; rely on verified server state.</li>
+                <li>Make filters shareable in the URL so a support agent can send a case link.</li>
+                <li>Keep the event timeline readable on mobile; use a vertical timeline rather than a wide table.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="backend">
+          <div class="section-kicker">05 · Backend PRD</div>
+          <h2>Backend: deterministic financial core, flexible AI explanation layer.</h2>
+          <p class="section-lead">Use Node.js and TypeScript for the hackathon. PostgreSQL is the recommended database because payment states, event ordering, idempotency, and reconciliation benefit from relational constraints. Redis and a queue are optional until batch processing is needed.</p>
+
+          <div class="architecture">
+            <div class="arch-row"><div class="arch-box accent">Razorpay Test Mode</div><div class="arch-detail">Payments, Payment Links, settlements, and webhooks. Keep credentials on the server.</div></div>
+            <div class="arch-row"><div class="arch-box">Webhook receiver</div><div class="arch-detail">Verify the raw body signature, store the event, deduplicate it, then return quickly.</div></div>
+            <div class="arch-row"><div class="arch-box">Event normalizer</div><div class="arch-detail">Map provider-specific events into canonical internal events and payment states.</div></div>
+            <div class="arch-row"><div class="arch-box">Case engine</div><div class="arch-detail">Open or update a payment case when a failure, mismatch, or missing event needs attention.</div></div>
+            <div class="arch-row"><div class="arch-box accent">Diagnosis + policy</div><div class="arch-detail">Rules calculate facts. AI explains the facts and ranks permitted next actions.</div></div>
+            <div class="arch-row"><div class="arch-box">Action executor</div><div class="arch-detail">Runs only approved, idempotent actions such as creating a Payment Link or drafting a support response.</div></div>
+            <div class="arch-row"><div class="arch-box">Reconciliation</div><div class="arch-detail">Matches orders, payments, refunds, settlements, fees, and bank records; unresolved items remain visible.</div></div>
+          </div>
+
+          <h3>Canonical payment state machine</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Internal state</th><th>Meaning in plain words</th><th>Allowed next states</th><th>Safety rule</th></tr></thead>
+              <tbody>
+                <tr><td><strong>initiated</strong></td><td>An order or payment attempt exists.</td><td>authorized, failed, unknown</td><td>Do not call a payment successful from this state.</td></tr>
+                <tr><td><strong>authorized</strong></td><td>The payment was approved but may not yet be captured.</td><td>captured, failed, unknown</td><td>Show the capture condition clearly.</td></tr>
+                <tr><td><strong>captured</strong></td><td>The amount was captured by the payment system.</td><td>settled, refunded, disputed, unknown</td><td>Never create a second payment for the same order without a duplicate check.</td></tr>
+                <tr><td><strong>failed</strong></td><td>The attempt did not complete.</td><td>initiated, recovered, unknown</td><td>Retry only when the reason and policy allow it.</td></tr>
+                <tr><td><strong>refunded</strong></td><td>Money was returned or is in the refund lifecycle.</td><td>settled, unknown</td><td>Show whether refund is initiated, processed, or credited.</td></tr>
+                <tr><td><strong>settled</strong></td><td>The payment reached the settlement record.</td><td>refunded, disputed</td><td>Reconcile amount, fee, tax, and settlement reference.</td></tr>
+                <tr><td><strong>unknown</strong></td><td>Available evidence conflicts or is incomplete.</td><td>any verified state</td><td>No autonomous money action from unknown.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="callout blue">
+            <strong>Important implementation detail</strong>
+            <p>Provider event names can change or arrive out of order. Store the original event and map it into your own canonical state. Your UI and policy engine should depend on the canonical state, not on one provider string.</p>
+          </div>
+
+          <h3>Data model</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Table</th><th>Key fields</th><th>Why it exists</th></tr></thead>
+              <tbody>
+                <tr><td><strong>merchants</strong></td><td>id, name, mode, encrypted_key_ref, timezone, policy_id</td><td>Connector and merchant settings. Never store secrets in plain text.</td></tr>
+                <tr><td><strong>customers</strong></td><td>id, merchant_id, email_hash, country, currency</td><td>Keep only the minimum needed to group attempts. Mask sensitive values in the UI.</td></tr>
+                <tr><td><strong>orders</strong></td><td>id, merchant_id, external_ref, amount, currency, status</td><td>Business order that can have multiple payment attempts.</td></tr>
+                <tr><td><strong>payment_attempts</strong></td><td>id, order_id, provider_payment_id, method, country, status, error_code</td><td>One row per attempt, not one row per order.</td></tr>
+                <tr><td><strong>webhook_events</strong></td><td>id, provider_event_id, type, raw_body, signature_valid, received_at, processed_at</td><td>Replayable source of truth for integration debugging.</td></tr>
+                <tr><td><strong>payment_cases</strong></td><td>id, order_id, reason, severity, amount_at_risk, status, confidence</td><td>Human-friendly work item for recovery and support.</td></tr>
+                <tr><td><strong>diagnoses</strong></td><td>case_id, category, facts_json, explanation, model, created_at</td><td>Versioned explanation based on known facts.</td></tr>
+                <tr><td><strong>recovery_actions</strong></td><td>case_id, action_type, status, approval_by, idempotency_key, result_json</td><td>Every proposed and executed action, including rejected actions.</td></tr>
+                <tr><td><strong>payment_links</strong></td><td>case_id, provider_link_id, url, amount, expiry, status</td><td>Fallback recovery links and their outcomes.</td></tr>
+                <tr><td><strong>settlements</strong></td><td>provider_settlement_id, payment_id, gross, fee, tax, net, settled_at</td><td>Settlement-level financial facts.</td></tr>
+                <tr><td><strong>recon_items</strong></td><td>source_type, source_id, expected, actual, difference, status, explanation</td><td>Matched or exceptional records.</td></tr>
+                <tr><td><strong>audit_logs</strong></td><td>actor, action, entity, before_json, after_json, request_id, created_at</td><td>Immutable product history for trust and debugging.</td></tr>
+                <tr><td><strong>eval_cases</strong></td><td>input_json, expected_category, expected_action, actual_json, score</td><td>Held-out evaluation set for the AI workflow.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section" id="ai">
+          <div class="section-kicker">06 · AI and decision engine</div>
+          <h2>Let software calculate; let AI explain and prioritize.</h2>
+          <div class="grid two">
+            <div class="card">
+              <h3>Deterministic layer</h3>
+              <p>This layer must be testable without an LLM.</p>
+              <ul>
+                <li>Verify webhook signatures.</li>
+                <li>Deduplicate events and actions by provider ID and idempotency key.</li>
+                <li>Calculate amounts, fees, refunds, settlement differences, and timeouts.</li>
+                <li>Apply country, currency, retry, expiry, and approval policies.</li>
+                <li>Detect contradictory or missing lifecycle states.</li>
+                <li>Block actions when risk, identity, or state is uncertain.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>AI layer</h3>
+              <p>This layer should be constrained by facts supplied by the backend.</p>
+              <ul>
+                <li>Translate gateway and event facts into plain English.</li>
+                <li>Classify the likely reason using a fixed taxonomy.</li>
+                <li>Rank already-permitted recovery actions.</li>
+                <li>Draft a customer-safe support response.</li>
+                <li>Explain why a case was escalated or left unresolved.</li>
+                <li>Return structured JSON, not free-form commands.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="code-title"><span>Example diagnosis contract</span><button class="copy" data-copy="diagnosis-json">Copy</button></div>
+          <pre id="diagnosis-json"><code>{
+  "category": "customer_action_required",
+  "confidence": 0.86,
+  "facts_used": [
+    "international_card",
+    "3ds_or_issuer_step_not_completed",
+    "no_capture_event",
+    "attempt_age_minutes: 18"
+  ],
+  "explanation": "The payment was not captured. The evidence suggests the customer or issuing bank did not complete an authentication step.",
+  "recommended_action": "send_alternate_payment_link",
+  "do_not_do": ["blind_retry", "mark_order_paid", "issue_refund"],
+  "stopping_rule": "Stop after one alternate link or when a successful payment is observed.",
+  "needs_human_approval": true
+}</code></pre>
+
+          <h3 style="margin-top:22px">Failure taxonomy and policy</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Category</th><th>Typical situation</th><th>Allowed recommendation</th><th>Never do automatically</th></tr></thead>
+              <tbody>
+                <tr><td><strong>transient</strong></td><td>Timeout, temporary bank or network problem.</td><td>Wait, then one policy-approved retry or alternate link.</td><td>Repeated retries in a loop.</td></tr>
+                <tr><td><strong>customer_action</strong></td><td>3DS, OTP, authentication, or checkout abandonment.</td><td>Explain the customer step or send a new link.</td><td>Blame the customer or retry immediately.</td></tr>
+                <tr><td><strong>eligibility</strong></td><td>Currency, country, method, or merchant configuration issue.</td><td>Suggest a permitted alternate method and flag configuration.</td><td>Change compliance settings or bypass eligibility.</td></tr>
+                <tr><td><strong>risk_block</strong></td><td>Risk or fraud decision.</td><td>Escalate with evidence and preserve the decision.</td><td>Bypass a risk block or coach the user around it.</td></tr>
+                <tr><td><strong>merchant_config</strong></td><td>Missing international enablement or incomplete setup.</td><td>Show the missing requirement and create an internal task.</td><td>Tell the merchant that payment is possible when it is not.</td></tr>
+                <tr><td><strong>finance_exception</strong></td><td>Payment, refund, settlement, or bank mismatch.</td><td>Open a reconciliation case and explain the difference.</td><td>Change ledger values to make them match.</td></tr>
+                <tr><td><strong>unknown</strong></td><td>Evidence conflicts or is incomplete.</td><td>Ask for more evidence or escalate.</td><td>Guess, retry, refund, or mark paid.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="grid three">
+            <div class="card"><span class="tag mint">Auto allowed</span><h3>Read and explain</h3><p>Fetch test-mode details, build timelines, classify evidence, calculate differences, and draft messages.</p></div>
+            <div class="card"><span class="tag amber">Human approval</span><h3>Customer-facing action</h3><p>Create a Payment Link, send a recovery message, or run a batch. Record who approved it.</p></div>
+            <div class="card"><span class="tag rose">Never in MVP</span><h3>High-impact bypass</h3><p>Bypass risk, alter settlement records, store card data, or run unlimited retries/refunds.</p></div>
+          </div>
+        </section>
+
+        <section class="section" id="api">
+          <div class="section-kicker">07 · API contract</div>
+          <h2>Small APIs that map directly to the screens.</h2>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Method</th><th>Endpoint</th><th>Purpose</th><th>Auth</th></tr></thead>
+              <tbody>
+                <tr><td><strong>POST</strong></td><td>/api/connectors/razorpay/test</td><td>Validate Test Mode credentials and save a safe connector reference.</td><td>Owner/Admin</td></tr>
+                <tr><td><strong>POST</strong></td><td>/api/webhooks/razorpay</td><td>Verify and enqueue a webhook. Return quickly after durable storage.</td><td>Signature</td></tr>
+                <tr><td><strong>GET</strong></td><td>/api/dashboard/summary</td><td>Return money at risk, cases, recovered amount, and reconciliation counts.</td><td>Session</td></tr>
+                <tr><td><strong>GET</strong></td><td>/api/payment-cases</td><td>Filter cases by status, reason, country, currency, and date.</td><td>Session</td></tr>
+                <tr><td><strong>GET</strong></td><td>/api/payment-cases/:id</td><td>Return case, order, attempts, events, diagnosis, actions, and recon.</td><td>Session</td></tr>
+                <tr><td><strong>POST</strong></td><td>/api/payment-cases/:id/diagnose</td><td>Run deterministic facts plus the AI explanation contract.</td><td>Session</td></tr>
+                <tr><td><strong>POST</strong></td><td>/api/payment-cases/:id/actions</td><td>Approve, reject, or execute an allowed action with idempotency.</td><td>Session + role</td></tr>
+                <tr><td><strong>POST</strong></td><td>/api/payment-cases/:id/payment-link</td><td>Create one test Payment Link after approval.</td><td>Session + role</td></tr>
+                <tr><td><strong>POST</strong></td><td>/api/recovery-runs</td><td>Preview or execute a filtered batch with a stopping rule.</td><td>Owner/Admin</td></tr>
+                <tr><td><strong>GET</strong></td><td>/api/reconciliation/exceptions</td><td>List unmatched payments, refunds, settlements, and bank rows.</td><td>Session</td></tr>
+                <tr><td><strong>POST</strong></td><td>/api/demo/scenarios/:name</td><td>Seed a known failure scenario for the pitch demo.</td><td>Demo only</td></tr>
+                <tr><td><strong>GET</strong></td><td>/api/audit</td><td>Return filtered, read-only audit entries.</td><td>Owner/Admin</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="code-title"><span>Example action request</span><button class="copy" data-copy="action-json">Copy</button></div>
+          <pre id="action-json"><code>POST /api/payment-cases/case_123/actions
+{
+  "action_type": "create_payment_link",
+  "approval": {
+    "approved_by": "user_42",
+    "reason": "One alternate flow; no capture event exists"
+  },
+  "idempotency_key": "case_123-recovery-1",
+  "parameters": {
+    "amount": 4900,
+    "currency": "USD",
+    "expires_in_minutes": 60,
+    "reference_id": "order_987-recovery-1"
+  }
+}</code></pre>
+
+          <div class="code-title"><span>Example webhook handling pseudocode</span><button class="copy" data-copy="webhook-pseudocode">Copy</button></div>
+          <pre id="webhook-pseudocode"><code>receive rawBody, signature
+if !verifyHmacSha256(rawBody, signature, webhookSecret): reject 401
+
+eventId = readProviderEventId(rawBody)
+if webhookEvents.exists(eventId): return 200
+
+webhookEvents.insert({ eventId, rawBody, signatureValid: true })
+queue.enqueue("process-payment-event", { eventId })
+return 200
+
+// Worker:
+event = webhookEvents.get(eventId)
+canonical = normalizeProviderEvent(event)
+transaction:
+  upsertPaymentAttempt(canonical)
+  applyCanonicalState(canonical)
+  openOrUpdateCaseIfNeeded(canonical)
+  appendAuditLog(canonical)</code></pre>
+        </section>
+
+        <section class="section" id="integration">
+          <div class="section-kicker">08 · Razorpay integration</div>
+          <h2>Use Razorpay APIs as the connector, not as your business logic.</h2>
+          <div class="grid two">
+            <div class="card">
+              <h3>Integration sequence</h3>
+              <ol>
+                <li>Create a Razorpay account and use separate Test Mode keys.</li>
+                <li>Store the key ID and key secret in server-side environment variables or a secret manager.</li>
+                <li>Configure a Test Mode webhook endpoint and a webhook secret.</li>
+                <li>Validate <code>X-Razorpay-Signature</code> against the raw request body using HMAC-SHA256.</li>
+                <li>Persist the event before processing it, then deduplicate by provider event ID.</li>
+                <li>Use the official SDK for server-side fetches and actions.</li>
+                <li>For the fallback action, create a test Payment Link with amount, currency, expiry, and a unique reference ID.</li>
+                <li>Verify the resulting payment from server state and webhooks, not just the browser redirect.</li>
+              </ol>
+            </div>
+            <div class="card">
+              <h3>Useful official building blocks</h3>
+              <ul>
+                <li><a href="https://razorpay.com/docs/quickstart/">Razorpay quickstart and Test Mode</a></li>
+                <li><a href="https://razorpay.com/docs/webhooks/validate-test/">Webhook validation and idempotency guidance</a></li>
+                <li><a href="https://razorpay.com/docs/api/payments/payment-links/create-standard/">Create a standard Payment Link API</a></li>
+                <li><a href="https://razorpay.com/docs/payments/international-payments/">International payments documentation</a></li>
+                <li><a href="https://github.com/razorpay/razorpay-node">Official Node SDK</a></li>
+                <li><a href="https://github.com/razorpay/razorpay-mcp-server">Official Razorpay MCP Server</a></li>
+              </ul>
+              <p class="small">Use the SDK for deterministic production-style calls. An MCP layer can be added for a natural-language read-only demo, but it should not replace your policy gate.</p>
+            </div>
+          </div>
+
+          <div class="callout rose">
+            <strong>Do not accidentally enter live-payment scope</strong>
+            <p>For the hackathon, label every screen “Test Mode” or “Synthetic Demo.” Do not ask the judge to enter real card details. Do not place key secrets in frontend code, GitHub, prompts, screenshots, or logs.</p>
+          </div>
+        </section>
+
+        <section class="section" id="repo">
+          <div class="section-kicker">09 · Suggested repository</div>
+          <h2>Organize the code around business capabilities.</h2>
+          <div class="code-title"><span>Recommended project structure</span><button class="copy" data-copy="tree">Copy</button></div>
+          <pre id="tree"><code>payrescue/
+├── apps/web/
+│   ├── app/(dashboard)/dashboard/page.tsx
+│   ├── app/(dashboard)/cases/page.tsx
+│   ├── app/(dashboard)/cases/[id]/page.tsx
+│   ├── app/(dashboard)/recovery/page.tsx
+│   ├── app/(dashboard)/reconciliation/page.tsx
+│   ├── app/(dashboard)/audit/page.tsx
+│   ├── components/cases/
+│   ├── components/recovery/
+│   ├── components/reconciliation/
+│   └── lib/api-client.ts
+├── apps/api/
+│   ├── routes/connectors.ts
+│   ├── routes/webhooks.ts
+│   ├── routes/cases.ts
+│   ├── routes/recovery.ts
+│   ├── routes/reconciliation.ts
+│   └── middleware/auth.ts
+├── packages/domain/
+│   ├── payment-state-machine.ts
+│   ├── failure-taxonomy.ts
+│   ├── recovery-policy.ts
+│   ├── idempotency.ts
+│   └── money.ts
+├── packages/connectors/
+│   └── razorpay/
+│       ├── client.ts
+│       ├── webhook-verifier.ts
+│       ├── event-normalizer.ts
+│       └── payment-links.ts
+├── packages/ai/
+│   ├── diagnose.ts
+│   ├── prompts.ts
+│   ├── schemas.ts
+│   └── evaluator.ts
+├── packages/db/
+│   ├── schema/
+│   ├── migrations/
+│   └── seed-scenarios.ts
+└── tests/
+    ├── domain/
+    ├── webhooks/
+    ├── recovery/
+    └── eval/
+</code></pre>
+        </section>
+
+        <section class="section" id="build">
+          <div class="section-kicker">10 · Build sequence</div>
+          <h2>Build in vertical slices, so the demo works early.</h2>
+          <div class="timeline">
+            <div class="phase"><div class="phase-time">0–2 hours</div><div class="phase-dot"></div><div class="phase-content"><h4>Write the contract</h4><p>Freeze the failure taxonomy, canonical states, action policy, demo scenarios, and success metrics. Create the repository and environment variables.</p></div></div>
+            <div class="phase"><div class="phase-time">2–7 hours</div><div class="phase-dot"></div><div class="phase-content"><h4>Build the event spine</h4><p>Create database tables, webhook receiver, raw-body signature verification, event deduplication, event normalizer, and seeded synthetic events. Prove that out-of-order events do not corrupt state.</p></div></div>
+            <div class="phase"><div class="phase-time">7–13 hours</div><div class="phase-dot"></div><div class="phase-content"><h4>Build one payment case</h4><p>Implement the case detail API and screen. Show a timeline, facts, failure category, confidence, plain-English explanation, and unknown state.</p></div></div>
+            <div class="phase"><div class="phase-time">13–19 hours</div><div class="phase-dot"></div><div class="phase-content"><h4>Add safe recovery</h4><p>Implement approval, idempotency, Payment Link creation in Test Mode, link expiry, recovery status, and the stopping rule. Do not add more actions until this works end to end.</p></div></div>
+            <div class="phase"><div class="phase-time">19–25 hours</div><div class="phase-dot"></div><div class="phase-content"><h4>Add the control room</h4><p>Build dashboard cards, case filters, recovery queue, support packet, and readable empty/loading/error states.</p></div></div>
+            <div class="phase"><div class="phase-time">25–32 hours</div><div class="phase-dot"></div><div class="phase-content"><h4>Add reconciliation</h4><p>Seed payments, refunds, fees, and settlements. Implement deterministic matching and an exception explanation. Keep the UI focused on what needs human attention.</p></div></div>
+            <div class="phase"><div class="phase-time">32–40 hours</div><div class="phase-dot"></div><div class="phase-content"><h4>Evaluate and polish</h4><p>Run the held-out cases, fix false diagnoses, test duplicate webhooks, add audit log views, record a clean demo, and document architecture.</p></div></div>
+          </div>
+        </section>
+
+        <section class="section" id="testing">
+          <div class="section-kicker">11 · Testing and evaluation</div>
+          <h2>Make the demo measurable and safe.</h2>
+          <div class="grid two">
+            <div class="card">
+              <h3>Seed at least 12 scenarios</h3>
+              <div class="checklist">
+                <div class="check">International 3DS or customer-authentication incomplete.</div>
+                <div class="check">Issuer decline with no capture.</div>
+                <div class="check">Bank timeout followed by a late success.</div>
+                <div class="check">Customer abandoned checkout.</div>
+                <div class="check">Duplicate payment attempt for one order.</div>
+                <div class="check">Payment debited/failed with refund pending.</div>
+                <div class="check">Missing webhook followed by a successful API fetch.</div>
+                <div class="check">Out-of-order webhook events.</div>
+                <div class="check">Payment captured but settlement not yet present.</div>
+                <div class="check">Settlement shortfall due to fee and tax.</div>
+                <div class="check">Risk block that must not be bypassed.</div>
+                <div class="check">Insufficient evidence and unknown status.</div>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Tests to show judges</h3>
+              <ul>
+                <li><strong>Unit:</strong> state transitions, money arithmetic, taxonomy, policy, idempotency.</li>
+                <li><strong>Integration:</strong> valid/invalid webhook signatures and duplicate event replay.</li>
+                <li><strong>Connector:</strong> Test Mode fetch, Payment Link creation, and simulated status update.</li>
+                <li><strong>AI evaluation:</strong> 50+ synthetic records held out from the prompt examples.</li>
+                <li><strong>Security:</strong> secrets unavailable to browser, logs, and model context.</li>
+                <li><strong>Failure:</strong> provider timeout, LLM timeout, malformed JSON, and database retry.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Metric</th><th>Definition</th><th>Target for demo</th></tr></thead>
+              <tbody>
+                <tr><td><strong>Diagnosis accuracy</strong></td><td>Correct failure category on held-out cases.</td><td>Report actual result; aim for ≥ 85%.</td></tr>
+                <tr><td><strong>Safe-action precision</strong></td><td>Recommended action is appropriate for the labelled case.</td><td>Report separately from diagnosis; aim for ≥ 90%.</td></tr>
+                <tr><td><strong>Recovery rate</strong></td><td>Failed cases that reach a verified successful payment in the simulator.</td><td>Show amount and count, not just percentage.</td></tr>
+                <tr><td><strong>Reconciliation match rate</strong></td><td>Records matched without human intervention.</td><td>Report match rate and exception count.</td></tr>
+                <tr><td><strong>Duplicate protection</strong></td><td>Repeated event/action does not create a second charge or link.</td><td>100% in tested replay scenarios.</td></tr>
+                <tr><td><strong>Unknown honesty</strong></td><td>Cases without enough evidence remain unresolved.</td><td>Zero fabricated certainty in the unknown set.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section" id="risks">
+          <div class="section-kicker">12 · Safety and failure handling</div>
+          <h2>Trust is the product feature.</h2>
+          <div class="grid two">
+            <div class="card">
+              <h3>Non-negotiable controls</h3>
+              <ul>
+                <li>Test Mode and synthetic data for the full demo.</li>
+                <li>HMAC verification using the raw webhook body.</li>
+                <li>Idempotency on events, payment links, retries, and batch runs.</li>
+                <li>Human approval for customer-facing or money-related actions.</li>
+                <li>Spending and retry limits, expiry, and a stopping rule.</li>
+                <li>LLM output validated against a strict JSON schema.</li>
+                <li>Audit every proposal, approval, rejection, execution, and error.</li>
+                <li>Mask email, phone, and identifiers in AI prompts and screenshots.</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>What happens when something breaks?</h3>
+              <ul>
+                <li><strong>Webhook signature fails:</strong> reject, log metadata only, alert the operator.</li>
+                <li><strong>Duplicate event:</strong> return success without reprocessing.</li>
+                <li><strong>Events conflict:</strong> set state to unknown and open an exception.</li>
+                <li><strong>LLM is unavailable:</strong> show deterministic facts and “AI explanation unavailable.”</li>
+                <li><strong>LLM returns invalid JSON:</strong> retry once, then fall back to manual review.</li>
+                <li><strong>Razorpay API times out:</strong> mark action pending; never assume it failed or succeeded.</li>
+                <li><strong>Payment Link already exists:</strong> return the existing idempotent result.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout rose">
+            <strong>Do not claim certainty you do not have</strong>
+            <p>If the evidence does not tell you whether the customer was charged, say “We cannot confirm yet.” A transparent unknown state is stronger than a confident but unsafe answer.</p>
+          </div>
+        </section>
+
+        <section class="section" id="future">
+          <div class="section-kicker">13 · Roadmap after the hackathon</div>
+          <h2>Expand from one recovery action into a trusted payment operations layer.</h2>
+          <div class="grid three">
+            <div class="card"><span class="tag mint">v1.1</span><h3>More recovery paths</h3><p>Subscription failures, mandate retries, local payment alternatives, scheduled reminders, and batch recovery with merchant-defined policies.</p></div>
+            <div class="card"><span class="tag blue">v2</span><h3>Cross-border operations</h3><p>Country-level conversion insights, currency and purpose-code checks, settlement documentation, and multi-rail exception handling.</p></div>
+            <div class="card"><span class="tag amber">v3</span><h3>Agentic commerce</h3><p>Machine-readable product offers, delegated spending limits, agent identity, wallet controls, per-use billing, and agent-to-agent reconciliation.</p></div>
+          </div>
+          <div class="callout blue">
+            <strong>YC-style expansion rule</strong>
+            <p>Only add a new surface when the current workflow has a clear buyer, repeated usage, and a measurable improvement in recovered money, support time, or reconciliation accuracy.</p>
+          </div>
+        </section>
+
+        <section class="section" id="sources">
+          <div class="section-kicker">14 · Research and references</div>
+          <h2>Why this is a credible problem to build.</h2>
+          <p class="section-lead">The links below separate official Razorpay information, founder comments, YC patterns, community anecdotes, and technical building blocks. Reddit reports are signals only; they should not be presented as verified market statistics.</p>
+          <details open>
+            <summary>Official Razorpay and founder sources</summary>
+            <div>
+              <ul>
+                <li><a href="https://razorpay.com/buildathon/">Razorpay AI Buildathon brief</a> — official tracks and requirements.</li>
+                <li><a href="https://razorpay.com/blog/?p=27542">Razorpay on Vulcan</a> — payment reliability, fraud, and checkout intelligence.</li>
+                <li><a href="https://www.reasoned.live/p/razorpay-founder-harshil-mathur-on">Harshil Mathur interview on Vulcan</a> — routing, fraud, chargebacks, auditability, and rollout controls.</li>
+                <li><a href="https://www.moneycontrol.com/news/business/startup/razorpay-is-not-doing-any-r-d-investment-that-is-not-ai-first-says-ceo-harshil-mathur-13859189.html">Moneycontrol CEO interview</a> — AI-first R&amp;D, recovery, reconciliation, cross-border, and model costs.</li>
+                <li><a href="https://www.ycombinator.com/blog/qa-with-harshil-mathur-shashank-kumar-cofounders-of-razorpay/">YC Q&amp;A with Razorpay founders</a> — original startup/SME onboarding and cash-flow problems.</li>
+              </ul>
+            </div>
+          </details>
+          <details>
+            <summary>YC patterns to study</summary>
+            <div>
+              <ul>
+                <li><a href="https://www.ycombinator.com/companies/modern-treasury">Modern Treasury</a> and <a href="https://www.ycombinator.com/companies/proper">Proper</a> — payment operations and reconciliation.</li>
+                <li><a href="https://www.ycombinator.com/companies/coris">Coris</a>, <a href="https://www.ycombinator.com/companies/diligent">Diligent</a>, and <a href="https://www.ycombinator.com/companies/end-close">End Close</a> — AI risk, compliance, and continuous finance operations.</li>
+                <li><a href="https://www.ycombinator.com/companies/locus">Locus</a>, <a href="https://www.ycombinator.com/companies/sponge">Sponge</a>, and <a href="https://www.ycombinator.com/companies/orthogonal">Orthogonal</a> — permissions, wallets, and agentic payments.</li>
+              </ul>
+            </div>
+          </details>
+          <details>
+            <summary>Related GitHub building blocks</summary>
+            <div>
+              <ul>
+                <li><a href="https://github.com/razorpay/razorpay-node">Razorpay Node SDK</a>, <a href="https://github.com/razorpay/razorpay-python">Python SDK</a>, and <a href="https://github.com/razorpay/razorpay-go">Go SDK</a>.</li>
+                <li><a href="https://github.com/razorpay/razorpay-cli">Razorpay CLI</a> and <a href="https://github.com/razorpay/razorpay-mcp-server">Razorpay MCP Server</a>.</li>
+                <li><a href="https://github.com/himanisharrma/payops-copilot">PayOps Copilot</a>, <a href="https://github.com/raghavkhanna-finance/bank-to-gl-reconciliation">Bank-to-GL Reconciliation</a>, and <a href="https://github.com/ManeeshJupalle/CashPulse">CashPulse</a>.</li>
+                <li><a href="https://github.com/Svkayy/FraudGraph">FraudGraph</a> and <a href="https://github.com/google-agentic-commerce/AP2">Google AP2</a>.</li>
+              </ul>
+              <p>Use these repositories as references. Check licenses, security posture, maintenance, and whether code is appropriate for a demo before reusing anything.</p>
+            </div>
+          </details>
+          <details>
+            <summary>Reddit signal threads</summary>
+            <div>
+              <ul>
+                <li><a href="https://www.reddit.com/r/indianstartups/comments/1vjv9qs/razorpay-is-becoming-a-serious-problem-for-my/">International payment failures</a></li>
+                <li><a href="https://www.reddit.com/r/StartUpIndia/comments/1vo56am/razorpay-users-how-has-your-support-experience/">Support continuity</a></li>
+                <li><a href="https://www.reddit.com/r/Razorpay/comments/1skd2nr/razorpay-settlements-are-always-short/">Settlement shortfall explanation</a></li>
+                <li><a href="https://www.reddit.com/r/IndiaBusiness/comments/1rbknla/how-do-indian-d2c-businesses-reconcile-razorpay-stripe-settlements/">Manual reconciliation</a></li>
+                <li><a href="https://www.reddit.com/r/Razorpay/comments/1ux6vt4/we_lost_a_customer_today/">Ambiguous payment state</a></li>
+              </ul>
+            </div>
+          </details>
+        </section>
+
+        <footer class="footer">
+          <strong>PayRescue PRD</strong> · Prepared as an implementation guide for the Razorpay AI Buildathon. Keep the product in Test Mode or synthetic simulation until all safety, compliance, and production-readiness requirements are independently reviewed.
+        </footer>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      const links = Array.from(document.querySelectorAll('.side-nav a'));
+      const sections = links.map((link) => document.querySelector(link.getAttribute('href'))).filter(Boolean);
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          links.forEach((link) => link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id));
+        });
+      }, { rootMargin: '-18% 0px -72% 0px', threshold: 0 });
+
+      sections.forEach((section) => observer.observe(section));
+
+      document.querySelectorAll('[data-copy]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const target = document.getElementById(button.dataset.copy);
+          if (!target) return;
+          try {
+            await navigator.clipboard.writeText(target.innerText);
+            const original = button.innerText;
+            button.innerText = 'Copied';
+            setTimeout(() => { button.innerText = original; }, 1200);
+          } catch (error) {
+            button.innerText = 'Select manually';
+            setTimeout(() => { button.innerText = 'Copy'; }, 1200);
+          }
+        });
+      });
+    }());
+  </script>
+</body>
+</html>
