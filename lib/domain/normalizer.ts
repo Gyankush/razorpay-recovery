@@ -236,6 +236,23 @@ export async function openOrUpdateCase(
     `[Case Engine] Opened new payment case ${newCase.id} for order ${orderId}`
   );
 
+  // Tell the merchant in real time (durable outbox; fire-and-forget).
+  const [caseOrder] = await db
+    .select()
+    .from(orders)
+    .where(eq(orders.id, orderId))
+    .limit(1);
+  if (caseOrder) {
+    const { notifyMerchant } = await import("@/lib/notify");
+    void notifyMerchant({
+      merchantId: caseOrder.merchantId,
+      caseId: newCase.id,
+      type: "case_opened",
+      title: `Payment case opened (${category})`,
+      body: `${plainExplanation} Recommended: ${recommendedAction}. Order ${caseOrder.externalOrderId} ${(caseOrder.amount / 100).toFixed(2)} ${caseOrder.currency}.`,
+    });
+  }
+
   return newCase;
 }
 

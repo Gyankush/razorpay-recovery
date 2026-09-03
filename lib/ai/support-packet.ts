@@ -79,7 +79,11 @@ export async function generateSupportPacket(caseId: string): Promise<SupportPack
   // 1. Customer-Safe Message (Empathetic, clear, no jargon)
   let customerMsg = `Hi there,\n\nThank you for reaching out regarding your order (${extOrderId}).\n\n`;
 
-  if (diagnosis.category === "customer_action") {
+  if (storedLink?.status === "paid") {
+    customerMsg += `Good news — your payment of ${amountStr} has been successfully received and your order is confirmed. No further action is needed on your end.\n\nIf the amount has not yet reflected on your statement, please allow 1-2 business days for your bank to update it.`;
+  } else if (storedLink?.status === "expired") {
+    customerMsg += `The secure payment link we shared earlier for ${amountStr} has expired unused, and no charge was made. We are preparing a fresh checkout link for you and will share it shortly.\n\nIf you continue to experience issues, we recommend checking with your card issuer to ensure international e-commerce transactions are authorized on your card.`;
+  } else if (diagnosis.category === "customer_action") {
     customerMsg += `We noticed your recent payment attempt of ${amountStr} was not completed because the 3D-Secure bank verification challenge was interrupted or timed out. Please rest assured that your card has NOT been charged by us.\n\n`;
     if (alternateLink) {
       customerMsg += `To complete your purchase safely, please use this dedicated secure payment link:\n${alternateLink}\n(Link expires in 60 minutes).\n\n`;

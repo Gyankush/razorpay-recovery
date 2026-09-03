@@ -41,14 +41,19 @@ export function verifyWebhookSignature(
 
 /**
  * Creates and returns an authenticated instance of the Razorpay Node SDK.
+ * Pass explicit per-merchant credentials when available; otherwise falls
+ * back to the global env (single-merchant / dev setups).
  */
-export function getRazorpayClient(): Razorpay {
-  const key_id = process.env.RAZORPAY_KEY_ID;
-  const key_secret = process.env.RAZORPAY_KEY_SECRET;
+export function getRazorpayClient(override?: {
+  key_id?: string | null;
+  key_secret?: string | null;
+}): Razorpay {
+  const key_id = override?.key_id || process.env.RAZORPAY_KEY_ID;
+  const key_secret = override?.key_secret || process.env.RAZORPAY_KEY_SECRET;
 
   if (!key_id || !key_secret) {
     throw new Error(
-      "Missing RAZORPAY_KEY_ID or RAZORPAY_KEY_SECRET. Please ensure they are set in your .env.local file."
+      "Missing Razorpay credentials. Connect the merchant (per-merchant keys) or set RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET."
     );
   }
 

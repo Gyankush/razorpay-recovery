@@ -15,6 +15,8 @@ const ADMIN_PREFIXES = [
   "/api/connectors/",
   "/api/agent/",
   "/api/autopilot/",
+  "/api/merchants/",
+  "/api/webhooks/razorpay/sweep",
 ];
 
 function timingSafeCompare(a: string, b: string): boolean {

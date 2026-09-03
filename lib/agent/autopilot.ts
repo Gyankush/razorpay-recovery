@@ -5,12 +5,14 @@ import {
   orders,
   paymentAttempts,
   paymentCases,
+  paymentLinks,
   recoveryActions,
   type AutopilotPolicy,
 } from "@/db/schema";
-import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
+import { eq, and, desc, gte, lte, lt, sql } from "drizzle-orm";
 import { createRecoveryPaymentLink } from "@/lib/connectors/razorpay";
 import { runReconciliationEngine } from "@/lib/domain/reconciliation";
+import { sweepStaleWebhooks } from "@/lib/domain/webhook-sweeper";
 import { logAuditEvent } from "@/lib/domain/audit";
 import { safeJsonParse } from "@/lib/http";
 
@@ -132,6 +134,8 @@ export interface AgentRunReport {
   auto_resolved_late_capture: number;
   failed: number;
   skipped: AgentSkip[];
+  links_expired: number;
+  sweep: { swept: number; processed: number; failed: number } | null;
   recon: {
     matched: number;
     discrepancy: number;
@@ -153,6 +157,8 @@ export async function runAutopilot(): Promise<AgentRunReport> {
     auto_resolved_late_capture: 0,
     failed: 0,
     skipped: [],
+    links_expired: 0,
+    sweep: null,
     recon: null,
   };
 
@@ -300,6 +306,31 @@ export async function runAutopilot(): Promise<AgentRunReport> {
     };
   } catch (err) {
     console.error("[Autopilot] recon sweep failed:", err);
+  }
+
+  // Expiry sweeper: created links past their 60-min window become `expired`
+  // so operators and the support packet never present dead checkouts.
+  try {
+    const expired = await db
+      .update(paymentLinks)
+      .set({ status: "expired" })
+      .where(
+        and(
+          eq(paymentLinks.status, "created"),
+          lt(paymentLinks.expiry, new Date())
+        )
+      )
+      .returning({ id: paymentLinks.id });
+    report.links_expired = expired.length;
+  } catch (err) {
+    console.error("[Autopilot] link expiry sweep failed:", err);
+  }
+
+  // Missed-webhook replay (best-effort; replays converge idempotently).
+  try {
+    report.sweep = await sweepStaleWebhooks(5, 25);
+  } catch (err) {
+    console.error("[Autopilot] webhook sweep failed:", err);
   }
 
   await logAuditEvent({

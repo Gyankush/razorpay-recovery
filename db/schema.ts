@@ -60,6 +60,9 @@ export const merchants = pgTable("merchants", {
   name: varchar("name", { length: 255 }).notNull(),
   mode: merchantModeEnum("mode").default("test").notNull(),
   encryptedKeyRef: text("encrypted_key_ref"),
+  providerAccountId: varchar("provider_account_id", { length: 100 }).unique(),
+  contactEmail: varchar("contact_email", { length: 255 }),
+  webhookUrl: text("webhook_url"),
   timezone: varchar("timezone", { length: 50 }).default("Asia/Kolkata"),
   policyId: varchar("policy_id", { length: 50 }).default("default_v1"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
@@ -326,6 +329,37 @@ export const autopilotPolicies = pgTable(
 );
 
 /**
+ * Notifications table: durable outbox for merchant-facing alerts
+ * (case opened, link created/paid/expired, agent run summary).
+ * Delivery is attempted to the merchant's webhookUrl; without one,
+ * rows stay `queued` as an auditable outbox instead of fake `sent`.
+ */
+export const notifications = pgTable(
+  "notifications",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    merchantId: uuid("merchant_id")
+      .references(() => merchants.id, { onDelete: "cascade" })
+      .notNull(),
+    caseId: uuid("case_id").references(() => paymentCases.id, {
+      onDelete: "set null",
+    }),
+    type: varchar("type", { length: 100 }).notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    body: text("body").notNull(),
+    status: varchar("status", { length: 50 }).default("queued").notNull(),
+    attempts: integer("attempts").default(0).notNull(),
+    lastError: text("last_error"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("notifications_merchant_id_idx").on(t.merchantId),
+    index("notifications_status_idx").on(t.status),
+  ]
+);
+
+/**
  * Evaluation Cases table: Held-out evaluation benchmark set for the AI recovery copilot.
  */
 export const evalCases = pgTable("eval_cases", {
@@ -447,6 +481,9 @@ export type NewEvalCase = typeof evalCases.$inferInsert;
 
 export type AutopilotPolicy = typeof autopilotPolicies.$inferSelect;
 export type NewAutopilotPolicy = typeof autopilotPolicies.$inferInsert;
+
+export type Notification = typeof notifications.$inferSelect;
+export type NewNotification = typeof notifications.$inferInsert;
 
 export type MerchantMode = (typeof merchantModeEnum.enumValues)[number];
 export type PaymentAttemptStatus = (typeof paymentAttemptStatusEnum.enumValues)[number];

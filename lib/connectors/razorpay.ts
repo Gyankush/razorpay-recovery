@@ -4,9 +4,12 @@ import {
   recoveryActions,
   paymentCases,
   paymentLinks,
+  orders,
   type RecoveryAction,
 } from "@/db/schema";
 import { getRazorpayClient } from "@/lib/razorpay";
+import { getMerchant, resolveMerchantSecrets } from "@/lib/merchants";
+import { notifyMerchant } from "@/lib/notify";
 import { normalizeCurrency, toPositiveInt } from "@/lib/http";
 import { eq } from "drizzle-orm";
 
@@ -83,14 +86,36 @@ export async function createRecoveryPaymentLink(
     };
   }
 
-  // 2. Call Razorpay SDK (no silent fallback to fake links)
+  // 2. Resolve the merchant's own gateway credentials (per-merchant keys
+  //    win; global env is the single-merchant fallback), then call Razorpay.
+  //    No silent fallback to fake links: failures stay honest (see below).
   const expireBy = Math.floor(Date.now() / 1000) + 60 * 60; // 60 minutes
   let paymentLinkUrl: string | null = null;
   let paymentLinkId: string | null = null;
   let sdkError: string | null = null;
+  let merchantIdForNotice: string | null = null;
 
   try {
-    const razorpay = getRazorpayClient();
+    const [linkedCase] = await db
+      .select()
+      .from(paymentCases)
+      .where(eq(paymentCases.id, caseId))
+      .limit(1);
+    const [linkedOrder] = linkedCase
+      ? await db
+          .select()
+          .from(orders)
+          .where(eq(orders.id, linkedCase.orderId))
+          .limit(1)
+      : [];
+    merchantIdForNotice = linkedOrder?.merchantId ?? null;
+    const secrets = resolveMerchantSecrets(
+      linkedOrder ? await getMerchant(linkedOrder.merchantId) : null
+    );
+    const razorpay = getRazorpayClient({
+      key_id: secrets.keyId,
+      key_secret: secrets.keySecret,
+    });
     const linkResponse: any = await (razorpay.paymentLink as any).create({
       amount: validAmount, // lowest currency unit (cents / paise)
       currency: validCurrency.toUpperCase(),
@@ -213,6 +238,16 @@ export async function createRecoveryPaymentLink(
     );
     return { action, url: link.url, id: link.providerLinkId ?? "", raced: false as const };
   });
+
+  if (merchantIdForNotice && result.url) {
+    void notifyMerchant({
+      merchantId: merchantIdForNotice,
+      caseId,
+      type: "recovery_link_created",
+      title: `Recovery link created for case ${caseId.slice(0, 8)}`,
+      body: `Alternate checkout ${result.url} (${validCurrency} ${(validAmount / 100).toFixed(2)}, 60-min expiry). Approved by ${approvedBy}.`,
+    });
+  }
 
   return {
     success: true,
