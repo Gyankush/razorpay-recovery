@@ -194,8 +194,11 @@ export async function runAutopilot(): Promise<AgentRunReport> {
           eq(orders.merchantId, policy.merchantId)
         )
       )
-      .orderBy(paymentCases.createdAt)
+      .orderBy(desc(paymentCases.createdAt))
       .limit(policy.maxActionsPerRun * 3);
+    // NOTE: newest-first — fresh failures recover at far higher rates than
+    // stale ones, so the agent always works today's recoverable revenue
+    // before aging backlog.
 
     report.merchants_processed += 1;
     let executedThisMerchant = 0;
