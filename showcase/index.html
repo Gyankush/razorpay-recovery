@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>PayRescue — A to Z: What we built, how, and why</title>
+<meta name="description" content="The complete story of PayRescue: backend audit, fixes, autonomous AI, real-world wiring and demo sandbox — what, how and why, A to Z."/>
+<style>
+:root{
+  --bg:#070d1a; --bg2:#0b1426; --panel:rgba(255,255,255,.045); --panel2:rgba(255,255,255,.07);
+  --line:rgba(148,197,255,.14); --ink:#eaf2ff; --muted:#93a4c4; --faint:#5d6f93;
+  --cyan:#2dd4bf; --cyan2:#2ca7b8; --navy:#12304a; --amber:#fbbf24; --rose:#fb7185; --mint:#34d399; --blue:#60a5fa;
+  --radius:18px; --max:1120px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",sans-serif;
+  line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:rgba(45,212,191,.28)}
+a{color:var(--cyan);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.86em;
+  background:rgba(45,212,191,.1);border:1px solid rgba(45,212,191,.22);border-radius:6px;padding:1px 7px;color:#a7f3ea;white-space:nowrap}
+#progress{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--cyan2),var(--cyan));z-index:100}
+/* NAV */
+nav{position:sticky;top:0;z-index:50;background:rgba(7,13,26,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.nav-in{max-width:var(--max);margin:0 auto;padding:12px 22px;display:flex;align-items:center;gap:14px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.01em;color:var(--ink);white-space:nowrap}
+.brand:hover{text-decoration:none}
+.logo{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--cyan2),#0e7490);
+  display:flex;align-items:center;justify-content:center;font-weight:900;color:#fff;box-shadow:0 4px 18px rgba(44,167,184,.4)}
+.links{display:flex;gap:2px;margin-left:auto;overflow-x:auto;scrollbar-width:none}
+.links::-webkit-scrollbar{display:none}
+.links a{color:var(--muted);font-size:12.5px;font-weight:600;padding:8px 11px;border-radius:9px;white-space:nowrap}
+.links a:hover{color:var(--ink);background:var(--panel2);text-decoration:none}
+.links a.active{color:var(--cyan)}
+#menuBtn{display:none;margin-left:auto;background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+  border-radius:9px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 22px}
+/* HERO */
+.hero{position:relative;padding:96px 0 64px;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:-20% -10% auto;height:560px;pointer-events:none;
+  background:radial-gradient(520px 300px at 18% 30%,rgba(44,167,184,.22),transparent 65%),
+             radial-gradient(620px 340px at 82% 22%,rgba(96,165,250,.16),transparent 65%),
+             radial-gradient(500px 300px at 55% 80%,rgba(45,212,191,.1),transparent 65%)}
+.kicker{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:800;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--cyan);border:1px solid rgba(45,212,191,.3);background:rgba(45,212,191,.07);
+  padding:6px 14px;border-radius:999px;margin-bottom:22px}
+.kicker .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px var(--cyan);animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.4}}
+h1{font-size:clamp(38px,6vw,68px);line-height:1.04;letter-spacing:-.03em;margin:0 0 18px;font-weight:900}
+h1 .grad{background:linear-gradient(92deg,#7dd3fc,#2dd4bf 60%,#a7f3ea);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{font-size:clamp(15px,2vw,18.5px);color:var(--muted);max-width:62ch;margin:0 0 30px}
+.cta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:54px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:13px 24px;border-radius:13px;font-weight:800;font-size:14.5px;
+  border:1px solid transparent;transition:transform .15s ease,box-shadow .15s ease;cursor:pointer}
+.btn:hover{text-decoration:none;transform:translateY(-2px)}
+.btn.primary{background:linear-gradient(135deg,var(--cyan2),#0e7490);color:#fff;box-shadow:0 10px 30px rgba(44,167,184,.35)}
+.btn.ghost{background:var(--panel);border-color:var(--line);color:var(--ink)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px 18px;text-align:center}
+.stat b{display:block;font-size:30px;font-weight:900;letter-spacing:-.02em;color:#fff;font-variant-numeric:tabular-nums}
+.stat span{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+/* SECTIONS */
+section{padding:72px 0 8px;scroll-margin-top:70px}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.16em;color:var(--cyan);text-transform:uppercase;margin-bottom:10px}
+h2{font-size:clamp(26px,3.6vw,38px);letter-spacing:-.02em;margin:0 0 12px;font-weight:900}
+.sub{color:var(--muted);max-width:70ch;margin:0 0 34px;font-size:15.5px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:24px;transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease}
+.card:hover{transform:translateY(-3px);border-color:rgba(45,212,191,.35);box-shadow:0 16px 40px rgba(0,0,0,.35)}
+.card h3{margin:0 0 8px;font-size:17px;letter-spacing:-.01em}
+.card p{margin:0;color:var(--muted);font-size:14px}
+.card p+p{margin-top:8px}
+.tag{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);margin-bottom:12px}
+.tag.p0{background:rgba(251,113,133,.12);border-color:rgba(251,113,133,.4);color:#fda4af}
+.tag.p1{background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.4);color:#fcd34d}
+.tag.p2{background:rgba(96,165,250,.1);border-color:rgba(96,165,250,.4);color:#93c5fd}
+.tag.ok{background:rgba(52,211,153,.1);border-color:rgba(52,211,153,.4);color:#6ee7b7}
+.tag.demo{background:rgba(45,212,191,.1);border-color:rgba(45,212,191,.4);color:#5eead4}
+.why{border-left:3px solid var(--cyan2);padding:8px 0 8px 14px;margin-top:12px;color:var(--muted);font-size:13.5px;background:rgba(44,167,184,.05);border-radius:0 10px 10px 0}
+.why b{color:var(--ink)}
+.files{margin-top:12px;font-size:12.5px;color:var(--faint)}
+/* TIMELINE */
+.timeline{position:relative;margin:10px 0 0;padding-left:30px}
+.timeline::before{content:"";position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:linear-gradient(var(--cyan2),var(--navy))}
+.tstep{position:relative;padding:0 0 26px}
+.tstep::before{content:"";position:absolute;left:-27px;top:6px;width:12px;height:12px;border-radius:50%;
+  background:var(--bg);border:3px solid var(--cyan);box-shadow:0 0 14px rgba(45,212,191,.5)}
+.tstep .when{font-size:11.5px;font-weight:800;letter-spacing:.1em;color:var(--cyan);text-transform:uppercase}
+.tstep h3{margin:4px 0 6px;font-size:18px}
+.tstep p{margin:0;color:var(--muted);font-size:14px;max-width:72ch}
+/* ARCH */
+.arch{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:28px;overflow-x:auto}
+.arch svg{min-width:640px;width:100%;height:auto;display:block}
+.flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin-top:6px}
+.fstep{flex:1;min-width:150px;background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center;position:relative}
+.fstep b{display:block;font-size:14px;margin-bottom:4px}
+.fstep span{font-size:12px;color:var(--muted)}
+.fstep+.fstep{margin-left:26px}
+.fstep+.fstep::before{content:"→";position:absolute;left:-24px;top:38%;color:var(--cyan);font-weight:900}
+/* TABLE */
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--faint);background:rgba(255,255,255,.03)}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(45,212,191,.04)}
+td.m{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:#a7f3ea}
+/* CHECKS */
+.checks{display:grid;gap:10px}
+.check{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 18px;font-size:14px}
+.check .tick{flex:none;width:24px;height:24px;border-radius:50%;background:rgba(52,211,153,.15);color:var(--mint);
+  display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px}
+.check small{display:block;color:var(--faint);font-size:12.5px}
+/* QUOTE / CALLOUT */
+.callout{border:1px solid rgba(45,212,191,.3);background:linear-gradient(180deg,rgba(45,212,191,.08),rgba(44,167,184,.03));
+  border-radius:20px;padding:28px;margin:34px 0}
+.callout h3{margin:0 0 8px}
+.callout p{margin:0;color:var(--muted);font-size:14.5px;max-width:75ch}
+footer{border-top:1px solid var(--line);margin-top:80px;padding:36px 0 60px;color:var(--faint);font-size:13px}
+footer .wrap{display:flex;gap:18px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .6s ease}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none}html{scroll-behavior:auto}}
+@media (max-width:860px){
+  #menuBtn{display:block}
+  .links{display:none;width:100%;flex-direction:column;margin:10px 0 0}
+  .links.open{display:flex}
+  .nav-in{flex-wrap:wrap}
+  .hero{padding:64px 0 44px}
+  section{padding:52px 0 4px}
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<nav>
+  <div class="nav-in">
+    <a class="brand" href="#top"><span class="logo">P</span> PayRescue <span style="color:var(--faint);font-weight:600">· A to Z</span></a>
+    <button id="menuBtn" aria-label="Menu">☰ Sections</button>
+    <div class="links" id="navLinks">
+      <a href="#origin">Origin</a><a href="#audit">Audit</a><a href="#fixes">Fixes</a><a href="#product">Product</a>
+      <a href="#autonomy">Autonomy</a><a href="#realworld">Real-world</a><a href="#demo">Demo</a>
+      <a href="#arch">Architecture</a><a href="#api">API</a><a href="#verify">Proof</a><a href="#roadmap">Roadmap</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap" id="top">
+  <!-- HERO -->
+  <header class="hero">
+    <span class="kicker"><span class="dot"></span> Razorpay AI Buildathon 2026 · Live in production</span>
+    <h1>PayRescue: <span class="grad">every failure explained, every rupee recovered.</span></h1>
+    <p class="lede">An International Payment Recovery Copilot for Razorpay merchants — it diagnoses why a
+      cross-border payment failed, takes one bounded human-approved recovery step, and proves everything
+      later in an immutable audit trail. Below is the complete A-to-Z: what we built, <em>how</em> we built it,
+      and <em>why</em> each decision was made.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://razorpay-recovery.vercel.app" target="_blank" rel="noreferrer">↗ Open the live app</a>
+      <a class="btn ghost" href="https://github.com/Gyankush/razorpay-recovery" target="_blank" rel="noreferrer">GitHub repo</a>
+      <a class="btn ghost" href="#demo">↓ Judge walkthrough</a>
+    </div>
+    <div class="stats">
+      <div class="stat reveal"><b data-count="23">0</b><span>API routes</span></div>
+      <div class="stat reveal"><b data-count="15">0</b><span>DB tables</span></div>
+      <div class="stat reveal"><b data-count="12">0</b><span>Commits shipped</span></div>
+      <div class="stat reveal"><b><span data-count="41">0</span>.5%</b><span>7-day recovery rate</span></div>
+      <div class="stat reveal"><b data-count="8">0</b><span>P0 bugs fixed</span></div>
+      <div class="stat reveal"><b data-count="5">0</b><span>App screens</span></div>
+    </div>
+  </header>
+
+  <!-- 01 ORIGIN -->
+  <section id="origin">
+    <div class="eyebrow">01 · Where we started</div>
+    <h2>A promising demo that couldn't survive reality</h2>
+    <p class="sub"><strong>What:</strong> a Next.js 14 + Supabase Postgres + Razorpay codebase with a control-room dashboard,
+      webhook receiver, rule-based diagnosis, recovery links and reconciliation. <strong>Why it wasn't enough:</strong>
+      it ran on global test keys, faked success when Razorpay errored, had no auth, no multi-tenancy, and its
+      database migration was 8 tables behind the code. No merchant could have used it — so we rebuilt it into
+      something one could.</p>
+    <div class="grid g3">
+      <div class="card reveal"><span class="tag">Stack</span><h3>Next.js 14 · Supabase PG 17 · Drizzle · Vercel</h3>
+        <p>TypeScript throughout, Tailwind UI, <code>postgres</code> driver with pooled connections, Vercel Cron driving the agent.</p></div>
+      <div class="card reveal"><span class="tag">Money rails</span><h3>Razorpay test → live path</h3>
+        <p>HMAC webhooks, canonical payment state machine, idempotent recovery payment links with 60-minute expiry.</p></div>
+      <div class="card reveal"><span class="tag">AI core</span><h3>Deterministic diagnosis + autopilot</h3>
+        <p>Rule engine with confidence, facts and guardrails — then an autonomous agent that acts inside merchant-set bounds.</p></div>
+    </div>
+  </section>
+
+  <!-- 02 AUDIT -->
+  <section id="audit">
+    <div class="eyebrow">02 · The backend audit</div>
+    <h2>We read every file before writing a line</h2>
+    <p class="sub"><strong>How:</strong> full read of all <code>app/api/**</code>, <code>lib/**</code>,
+      <code>db/schema.ts</code>, migrations and scripts, plus <code>tsc</code>, env-presence checks and a
+      migration-vs-schema diff. <strong>Why first:</strong> <code>tsc</code> passed — proving the bugs were logic,
+      data and security holes no compiler would catch. Findings shipped as <code>BACKEND_AUDIT.md</code> +
+      <code>BACKEND_AUDIT.html</code> in the repo: <strong>8 critical, 10 high, 14 medium.</strong></p>
+    <div class="grid g2">
+      <div class="card reveal"><span class="tag p0">P0 · Data loss</span><h3>Migration 8 tables behind the code</h3>
+        <p>Settlements, recon, audit, eval and 4 more tables existed in code but not in SQL — any fresh database crashed on first use.</p>
+        <div class="why"><b>Why it mattered:</b> the #1 production killer. Fixed by generating migration <code>0001</code> and applying it to live Supabase.</div></div>
+      <div class="card reveal"><span class="tag p0">P0 · Money truth</span><h3>Recovery links lied on SDK failure</h3>
+        <p>Any Razorpay error returned <code>success:true</code> with a fabricated URL and marked the case <em>resolved</em>.</p>
+        <div class="why"><b>Why it mattered:</b> fake revenue, dead customer links. Now failures stay <code>proposed</code>, return 502, cases stay open.</div></div>
+      <div class="card reveal"><span class="tag p0">P0 · Safety</span><h3>Batch jobs could auto-charge risk blocks</h3>
+        <p>The batch executor processed <em>every</em> open case — including fraud blocks that must never auto-retry — with no cap and no auth.</p>
+        <div class="why"><b>Why it mattered:</b> policy violation by design. Now allowlisted, capped at 25, admin-gated.</div></div>
+      <div class="card reveal"><span class="tag p0">P0 · Blast radius</span><h3>One click flipped every merchant to test mode</h3>
+        <p>The connector self-test ran an unscoped <code>UPDATE merchants SET mode='test'</code> — plus logged raw key material.</p>
+        <div class="why"><b>Why it mattered:</b> a demo button could take live merchants offline. Now single-row, masked logs.</div></div>
+      <div class="card reveal"><span class="tag p0">P0 · Silent corruption</span><h3>Missing DATABASE_URL fell back to localhost</h3>
+        <p>A misconfigured deploy would silently read/write the wrong database instead of failing.</p>
+        <div class="why"><b>Why it mattered:</b> invisible data split. Now fail-fast in production with host logging.</div></div>
+      <div class="card reveal"><span class="tag p0">P0 · Open doors</span><h3>Zero auth + open demo seeders in prod</h3>
+        <p>Every mutating API accepted anonymous calls with free-text <code>approved_by</code>; anyone could flood prod with fake orders.</p>
+        <div class="why"><b>Why it mattered:</b> audit spoofing + DB spam. Now <code>middleware.ts</code> + per-route gates (<code>ADMIN_SECRET</code>, <code>CRON_SECRET</code>).</div></div>
+    </div>
+  </section>
+
+  <!-- 03 FIXES -->
+  <section id="fixes">
+    <div class="eyebrow">03 · How we fixed it</div>
+    <h2>Surgery, slice by slice — verified after each</h2>
+    <p class="sub">Every fix kept <code>tsc</code> + <code>next build</code> green and ended with a live-database check. Highlights:</p>
+    <div class="grid g2">
+      <div class="card reveal"><span class="tag ok">Idempotency</span><h3>Check-then-insert → ON CONFLICT</h3>
+        <p>Recovery, orders, attempts and recon upserts are race-safe; concurrent retries converge on one row instead of 500s or duplicates.</p>
+        <div class="files"><code>lib/connectors/razorpay.ts</code> · <code>lib/domain/normalizer.ts</code> · <code>reconciliation.ts</code></div></div>
+      <div class="card reveal"><span class="tag ok">State machine</span><h3>Terminal states can never regress</h3>
+        <p><code>captured → failed</code> is rejected; <code>failed → captured</code> (late success) allowed; known states never overwritten by <code>unknown</code>.</p>
+        <div class="files"><code>lib/domain/normalizer.ts → isAllowedTransition</code></div></div>
+      <div class="card reveal"><span class="tag ok">Money math</span><h3>Per-currency SQL aggregation</h3>
+        <p>Dashboard sums moved into SQL <code>GROUP BY currency</code> — no more adding USD cents to INR paise behind one <code>$</code> sign.</p>
+        <div class="files"><code>app/api/dashboard/summary/route.ts</code></div></div>
+      <div class="card reveal"><span class="tag ok">Scale</span><h3>Pagination + indexes everywhere</h3>
+        <p>Case list went from full-table-scan + JS grouping to keyset pages with 15+ new indexes and uniqueness constraints.</p>
+        <div class="files"><code>db/schema.ts</code> · <code>migration 0001</code></div></div>
+      <div class="card reveal"><span class="tag ok">Honesty</span><h3>Audit holes are now visible</h3>
+        <p>The logger returned a fake <code>id:"error-log"</code> row on failure. Now it returns <code>null</code>, logs an <code>AUDIT HOLE</code>, and JSON parsing never 500s a page.</p>
+        <div class="files"><code>lib/domain/audit.ts</code> · <code>app/api/audit/route.ts</code></div></div>
+      <div class="card reveal"><span class="tag ok">Taxonomy</span><h3>One failure language</h3>
+        <p>Normalizer and AI engine diverged (<code>issuer_decline</code> vs <code>customer_action</code>…). Unified on the diagnose taxonomy so filters, eval and autopilot agree.</p>
+        <div class="files"><code>lib/domain/normalizer.ts</code> · <code>lib/ai/diagnose.ts</code></div></div>
+    </div>
+  </section>
+
+  <!-- 04 PRODUCT -->
+  <section id="product">
+    <div class="eyebrow">04 · The product tour</div>
+    <h2>Five screens, one loop: truth → recovery → proof</h2>
+    <p class="sub"><strong>How the frontend was finished:</strong> design tokens, skeleton loaders, error boundaries,
+      search + status filters, per-currency formatting, keyboard-accessible focus, reduced-motion support.</p>
+    <div class="flow">
+      <div class="fstep reveal"><b>① Control Room</b><span>Money-at-risk, recoverable queue with root cause + confidence</span></div>
+      <div class="fstep reveal"><b>② Case file</b><span>AI diagnosis, facts, guardrails, timeline, support packet</span></div>
+      <div class="fstep reveal"><b>③ Checkout</b><span>Bounded payment link → customer pays → link paid</span></div>
+      <div class="fstep reveal"><b>④ Autopilot</b><span>Guardrails, copilot brief, one-click agent run</span></div>
+      <div class="fstep reveal"><b>⑤ Audit</b><span>Every step above as immutable rows</span></div>
+    </div>
+  </section>
+
+  <!-- 05 AUTONOMY -->
+  <section id="autonomy">
+    <div class="eyebrow">05 · Autonomous AI with guardrails</div>
+    <h2>An agent merchants can bound — and therefore trust</h2>
+    <p class="sub"><strong>Why autonomy this way:</strong> the moat isn't acting fast, it's acting <em>safely</em>.
+      Autopilot is disabled by default; merchants opt in per-policy. The 03:00 UTC Vercel Cron runs it daily
+      (Hobby-plan maximum; <code>*/15</code> on Pro).</p>
+    <div class="grid g3">
+      <div class="card reveal"><span class="tag ok">Allowlist</span><h3>Only safe categories</h3><p>Customer-action + transient by default. Validation <em>strips</em> risk/config/unknown — the API refuses risk-only policies.</p></div>
+      <div class="card reveal"><span class="tag ok">Caps</span><h3>Amount, count, confidence</h3><p>Per-order cap, max 50 actions/run, minimum confidence floor. Above any line → human.</p></div>
+      <div class="card reveal"><span class="tag ok">Hygiene</span><h3>Late captures auto-resolve</h3><p>Orders that actually got paid are resolved with no link sent — a link for a paid order is never created.</p></div>
+      <div class="card reveal"><span class="tag ok">Full sweep</span><h3>Recon + expiry + replay</h3><p>Each run reconciles the ledger, expires dead links, replays missed webhooks, and files a report in audit.</p></div>
+      <div class="card reveal"><span class="tag ok">Brief</span><h3>Copilot oversight</h3><p>24h activity, 7-day recovery rate, anomaly flags for spikes, risk elevation and backlog growth.</p></div>
+      <div class="card reveal"><span class="tag ok">Proof</span><h3>Skips are audited too</h3><p>Every skipped case records its reason (<code>above_amount_cap</code>, <code>low_confidence_needs_human</code>…) — oversight you can read.</p></div>
+    </div>
+  </section>
+
+  <!-- 06 REAL WORLD -->
+  <section id="realworld">
+    <div class="eyebrow">06 · Real-world wiring</div>
+    <h2>Five reasons nobody could use it — closed</h2>
+    <div class="grid g2">
+      <div class="card reveal"><span class="tag p1">Was</span><h3>One global test key, zero onboarding</h3>
+        <p><span class="tag ok">Now</span> <code>POST /api/merchants</code> onboards with AES-256-GCM encrypted keys; webhooks route by <code>account_id</code> to each merchant's own secret.</p></div>
+      <div class="card reveal"><span class="tag p1">Was</span><h3>Links couldn't finish the money loop</h3>
+        <p><span class="tag ok">Now</span> capture webhooks match link IDs exactly → link <code>paid</code>, case resolved as <em>paid</em>, expiry swept, support packet tells paid/expired/pending truth.</p></div>
+      <div class="card reveal"><span class="tag p1">Was</span><h3>Nobody got told anything</h3>
+        <p><span class="tag ok">Now</span> a durable notifications outbox alerts merchants on case-open, link-created and link-paid — queued honestly without a destination.</p></div>
+      <div class="card reveal"><span class="tag p1">Was</span><h3>Missed webhooks stayed missed</h3>
+        <p><span class="tag ok">Now</span> the processor is replayable; a sweeper endpoint plus every agent run replays stale events idempotently.</p></div>
+      <div class="card reveal"><span class="tag p1">Was</span><h3>One secret for all merchants</h3>
+        <p><span class="tag ok">Now</span> per-merchant HMAC verification with global fallback; <code>MASTER_KEY</code> enforced for credential writes.</p></div>
+      <div class="card reveal"><span class="tag demo">Bonus honesty</span><h3>The smoke suite caught a real bug</h3>
+        <p>Envelope parsing misaligned the AES IV — found by our own roundtrip test pre-commit, fixed, 5/5 green. Tests that catch things are the point.</p></div>
+    </div>
+  </section>
+
+  <!-- 07 DEMO -->
+  <section id="demo">
+    <div class="eyebrow">07 · Judge sandbox</div>
+    <h2>Zero login. Zero real money. Full loop.</h2>
+    <p class="sub"><strong>Why a sandbox, not test keys:</strong> placeholder keys fail honestly (by design), which looks
+      broken to a visitor. So <code>DEMO_MODE</code> forces a simulated gateway: deterministic demo checkouts served by
+      the app itself, rate-limited public endpoints, power routes still key-locked. Verified live: seed → diagnose →
+      link → pay → <code>resolved</code> + link <code>paid</code>, plus policy-ON → agent auto-recovery in one run.</p>
+    <div class="callout reveal">
+      <h3>🎯 The 4-click judge loop — try it live</h3>
+      <p>1 · <a href="https://razorpay-recovery.vercel.app" target="_blank" rel="noreferrer"><strong>Seed 3DS Fail</strong></a>
+      → 2 · <strong>Investigate</strong> the case → 3 · <strong>Approve &amp; Generate Payment Link</strong>
+      → 4 · open the link, hit <strong>Pay</strong> → then check <strong>Audit Trail</strong> and
+      <strong>Autopilot</strong>. Full script in <code>JUDGES.md</code>.</p>
+    </div>
+  </section>
+
+  <!-- 08 ARCH -->
+  <section id="arch">
+    <div class="eyebrow">08 · Architecture</div>
+    <h2>How the pieces fit</h2>
+    <div class="arch reveal">
+      <svg viewBox="0 0 900 300" role="img" aria-label="PayRescue architecture diagram">
+        <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="none" stroke="#2dd4bf" stroke-width="1.5"/></marker></defs>
+        <g font-family="Inter,sans-serif" font-size="12">
+          <rect x="10" y="60" width="150" height="180" rx="12" fill="rgba(96,165,250,.08)" stroke="rgba(96,165,250,.4)"/>
+          <text x="85" y="85" fill="#93c5fd" font-weight="800" text-anchor="middle">SOURCES</text>
+          <text x="85" y="115" fill="#eaf2ff" text-anchor="middle">Razorpay webhooks</text>
+          <text x="85" y="140" fill="#eaf2ff" text-anchor="middle">Operators (UI)</text>
+          <text x="85" y="165" fill="#eaf2ff" text-anchor="middle">Vercel Cron 03:00</text>
+          <text x="85" y="190" fill="#eaf2ff" text-anchor="middle">Judges (sandbox)</text>
+          <text x="85" y="215" fill="#5d6f93" text-anchor="middle">HMAC · keys · rate-limits</text>
+          <rect x="200" y="60" width="170" height="180" rx="12" fill="rgba(45,212,191,.07)" stroke="rgba(45,212,191,.4)"/>
+          <text x="285" y="85" fill="#5eead4" font-weight="800" text-anchor="middle">NEXT.JS 23 ROUTES</text>
+          <text x="285" y="112" fill="#eaf2ff" text-anchor="middle">webhooks + sweep</text>
+          <text x="285" y="134" fill="#eaf2ff" text-anchor="middle">cases · diagnose · actions</text>
+          <text x="285" y="156" fill="#eaf2ff" text-anchor="middle">agent run · brief · policy</text>
+          <text x="285" y="178" fill="#eaf2ff" text-anchor="middle">merchants · recon · audit</text>
+          <text x="285" y="200" fill="#eaf2ff" text-anchor="middle">demo checkout + seeds</text>
+          <text x="285" y="222" fill="#5d6f93" text-anchor="middle">middleware auth gate</text>
+          <rect x="410" y="60" width="180" height="180" rx="12" fill="rgba(251,191,36,.06)" stroke="rgba(251,191,36,.4)"/>
+          <text x="500" y="85" fill="#fcd34d" font-weight="800" text-anchor="middle">DOMAIN ENGINES</text>
+          <text x="500" y="112" fill="#eaf2ff" text-anchor="middle">state machine · idempotency</text>
+          <text x="500" y="134" fill="#eaf2ff" text-anchor="middle">AI diagnose · evaluator</text>
+          <text x="500" y="156" fill="#eaf2ff" text-anchor="middle">autopilot + guardrails</text>
+          <text x="500" y="178" fill="#eaf2ff" text-anchor="middle">reconciliation · audit</text>
+          <text x="500" y="200" fill="#eaf2ff" text-anchor="middle">notify outbox · sweeper</text>
+          <text x="500" y="222" fill="#5d6f93" text-anchor="middle">simulated ⇄ razorpay driver</text>
+          <rect x="630" y="60" width="150" height="180" rx="12" fill="rgba(52,211,153,.07)" stroke="rgba(52,211,153,.4)"/>
+          <text x="705" y="85" fill="#6ee7b7" font-weight="800" text-anchor="middle">SUPABASE ×15</text>
+          <text x="705" y="112" fill="#eaf2ff" text-anchor="middle">orders · attempts</text>
+          <text x="705" y="134" fill="#eaf2ff" text-anchor="middle">cases · links · recon</text>
+          <text x="705" y="156" fill="#eaf2ff" text-anchor="middle">policies · notify</text>
+          <text x="705" y="178" fill="#eaf2ff" text-anchor="middle">audit · webhooks</text>
+          <text x="705" y="200" fill="#5d6f93" text-anchor="middle">uniques + 15 indexes</text>
+          <text x="705" y="222" fill="#5d6f93" text-anchor="middle">Neon for dev branches</text>
+          <line x1="160" y1="150" x2="196" y2="150" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#ar)"/>
+          <line x1="370" y1="150" x2="406" y2="150" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#ar)"/>
+          <line x1="590" y1="150" x2="626" y2="150" stroke="#2dd4bf" stroke-width="1.5" marker-end="url(#ar)"/>
+          <rect x="200" y="255" width="580" height="34" rx="10" fill="rgba(255,255,255,.03)" stroke="rgba(148,197,255,.14)"/>
+          <text x="490" y="277" fill="#93a4c4" text-anchor="middle">5 screens: Control Room · Case · Checkout · Autopilot · Audit — search, skeletons, per-currency formatting</text>
+        </g>
+      </svg>
+    </div>
+  </section>
+
+  <!-- 09 API -->
+  <section id="api">
+    <div class="eyebrow">09 · API map</div>
+    <h2>23 routes, 4 trust zones</h2>
+    <div class="tblwrap reveal"><table>
+      <thead><tr><th>Group</th><th>Routes</th><th>Auth</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Ingest</strong></td><td class="m">POST /api/webhooks/razorpay · POST /api/webhooks/razorpay/sweep</td><td>HMAC · key</td></tr>
+        <tr><td><strong>Cases</strong></td><td class="m">GET /api/payment-cases · GET /api/payment-cases/[id] · POST …/diagnose · POST …/payment-link · POST …/actions</td><td>reads open · writes key (demo-open in sandbox)</td></tr>
+        <tr><td><strong>Recovery</strong></td><td class="m">POST /api/recovery-runs · GET /api/support/[id]</td><td>key · open</td></tr>
+        <tr><td><strong>Autonomy</strong></td><td class="m">GET/POST /api/agent/run · GET /api/agent/brief · GET/PUT /api/autopilot/policy</td><td>cron/key (demo-open)</td></tr>
+        <tr><td><strong>Money truth</strong></td><td class="m">POST /api/reconciliation/run · GET /api/reconciliation/exceptions · GET /api/dashboard/summary</td><td>key · open · open</td></tr>
+        <tr><td><strong>Platform</strong></td><td class="m">GET/POST /api/merchants · POST /api/connectors/razorpay/test · POST /api/eval/run · GET /api/eval/summary · GET /api/audit</td><td>key · key · key · open</td></tr>
+        <tr><td><strong>Sandbox</strong></td><td class="m">GET /api/demo/status · GET/POST /api/demo/scenarios/[name] · GET/POST /api/demo/checkout/[actionId]</td><td>public, rate-limited</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- 10 VERIFY -->
+  <section id="verify">
+    <div class="eyebrow">10 · Proof, not promises</div>
+    <h2>Verified live, not just built</h2>
+    <div class="checks">
+      <div class="check reveal"><span class="tick">✓</span><div>TypeScript + production build green on every slice<small><code>tsc --noEmit</code> · <code>next build</code> · middleware 27kB</small></div></div>
+      <div class="check reveal"><span class="tick">✓</span><div>Judge loop on live prod, zero credentials<small>seed → diagnose (<code>customer_action</code>) → link → pay → <code>resolved</code> + link <code>paid</code></small></div></div>
+      <div class="check reveal"><span class="tick">✓</span><div>Keyless autonomy: policy ON → seed → agent run → auto-resolved in one pass, 0 failed<small>skips carry reasons; risk blocks untouched</small></div></div>
+      <div class="check reveal"><span class="tick">✓</span><div>Gates hold in production<small>brief without key → 401 · with key → 200 · open reads unaffected</small></div></div>
+      <div class="check reveal"><span class="tick">✓</span><div>Smoke suites: 15/15 spine checks, 5/5 crypto roundtrips<small>including one test that caught a real AES IV bug pre-commit</small></div></div>
+      <div class="check reveal"><span class="tick">✓</span><div>Live data consistency<small>52 cases · 10 links · 31 audit rows · 7-day recovery rate 14% → 41.5% as loops closed</small></div></div>
+    </div>
+    <div class="callout reveal">
+      <h3>Why this order of work?</h3>
+      <p>Audit → fix → verify → deploy → autonomy → real-world wiring → demo. Each phase ended green before the next
+        began, so at no point was the product half-broken. The demo sandbox came <em>last</em> deliberately — a tour
+        of a lying product would have been theater; this one tours honest machinery.</p>
+    </div>
+  </section>
+
+  <!-- 11 ROADMAP -->
+  <section id="roadmap">
+    <div class="eyebrow">11 · What's next</div>
+    <h2>The road to a winning product</h2>
+    <p class="sub">Ranked in <code>AI_ROADMAP.md</code>: LLM diagnosis with citations over the rule-engine floor →
+      smart send-time and rail selection → Slack anomaly alerts → self-tuning caps → Ask-Copilot case chat →
+      FX-aware rails → win-back scoring. Deliberately never: blind retries, risk-block bypasses, or unaudited money movement.</p>
+    <div class="grid g3">
+      <div class="card reveal"><span class="tag p2">Next AI</span><h3>Cited LLM diagnosis</h3><p>Case-specific explanations with fact citations; any uncited claim falls back to the rule engine.</p></div>
+      <div class="card reveal"><span class="tag p2">Growth</span><h3>Learned recovery timing</h3><p>Per-merchant best-hour, best-rail scheduling computed from tables we already own.</p></div>
+      <div class="card reveal"><span class="tag p2">Push</span><h3>Anomaly alerts</h3><p>Brief warnings pushed to Slack/email the moment the agent run raises one.</p></div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <div><strong style="color:var(--ink)">PayRescue</strong> · Control Room →
+        <a href="https://razorpay-recovery.vercel.app" target="_blank" rel="noreferrer">live app</a> ·
+        <a href="https://github.com/Gyankush/razorpay-recovery" target="_blank" rel="noreferrer">repo</a> ·
+        Built slice-by-slice: audit → fix → deploy → autonomy → real-world → demo.</div>
+      <div>Single-file showcase · no trackers · works offline</div>
+    </div>
+  </footer>
+</div>
+
+<script>
+// Progress bar + reveal-on-scroll + counters + nav state + mobile menu. No deps.
+(function(){
+  var bar = document.getElementById('progress');
+  function onScroll(){
+    var h = document.documentElement;
+    var p = h.scrollTop / (h.scrollHeight - h.clientHeight || 1);
+    bar.style.width = (p*100).toFixed(1) + '%';
+  }
+  document.addEventListener('scroll', onScroll, {passive:true}); onScroll();
+
+  var io = new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, {threshold:.12});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+
+  var cio = new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(!e.isIntersecting) return;
+      var el = e.target, end = parseInt(el.getAttribute('data-count')||'0',10), t0 = null;
+      function tick(t){ if(!t0) t0 = t; var p = Math.min((t-t0)/1100, 1);
+        el.textContent = Math.round(end * (1-Math.pow(1-p,3))); if(p<1) requestAnimationFrame(tick); }
+      requestAnimationFrame(tick); cio.unobserve(el);
+    });
+  }, {threshold:.6});
+  document.querySelectorAll('[data-count]').forEach(function(el){ cio.observe(el); });
+
+  var links = Array.prototype.slice.call(document.querySelectorAll('#navLinks a'));
+  var secs = links.map(function(a){ return document.querySelector(a.getAttribute('href')); }).filter(Boolean);
+  var sio = new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(a){ a.classList.toggle('active', a.getAttribute('href') === '#' + e.target.id); });
+      }
+    });
+  }, {rootMargin:'-40% 0px -55% 0px'});
+  secs.forEach(function(s){ sio.observe(s); });
+
+  var btn = document.getElementById('menuBtn'), nav = document.getElementById('navLinks');
+  btn.addEventListener('click', function(){ nav.classList.toggle('open'); });
+  nav.addEventListener('click', function(e){ if(e.target.tagName === 'A') nav.classList.remove('open'); });
+})();
+</script>
+</body>
+</html>
