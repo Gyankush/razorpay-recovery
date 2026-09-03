@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { adminHeaders } from "@/lib/admin-key";
 import {
   ShieldCheck,
   ArrowRight,
@@ -13,6 +14,7 @@ import {
   CheckCircle2,
   ClipboardList,
   Search,
+  Bot,
 } from "lucide-react";
 
 interface SummaryData {
@@ -110,7 +112,15 @@ export default function DashboardPage() {
     try {
       setSeeding(true);
       setSeedSuccessMessage(null);
-      const res = await fetch(`/api/demo/scenarios/${scenarioName}`, { method: "POST" });
+      const res = await fetch(`/api/demo/scenarios/${scenarioName}`, {
+        method: "POST",
+        headers: adminHeaders(),
+      });
+      if (res.status === 401 || res.status === 403) {
+        setSeedSuccessMessage(null);
+        setLoadError("Seeding needs an operator key in production. Use the Autopilot page key field, then retry.");
+        return;
+      }
       const data = await res.json();
       if (data.success) {
         setSeedSuccessMessage(
@@ -202,6 +212,14 @@ export default function DashboardPage() {
               >
                 <ClipboardList className="w-3.5 h-3.5 text-[#2ca7b8]" />
                 Audit Trail
+              </Link>
+
+              <Link
+                href="/autopilot"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white border border-[#dfe6ee] hover:bg-slate-50 text-[#12304a] text-xs font-semibold shadow-sm transition"
+              >
+                <Bot className="w-3.5 h-3.5 text-[#2ca7b8]" />
+                Autopilot
               </Link>
             </div>
           </div>

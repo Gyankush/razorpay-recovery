@@ -13,6 +13,8 @@ const ADMIN_PREFIXES = [
   "/api/eval/",
   "/api/reconciliation/run",
   "/api/connectors/",
+  "/api/agent/",
+  "/api/autopilot/",
 ];
 
 function timingSafeCompare(a: string, b: string): boolean {
@@ -34,6 +36,14 @@ export function middleware(req: NextRequest) {
   if (!isCaseMutation && !isAdminPath) return NextResponse.next();
 
   const secret = process.env.ADMIN_SECRET;
+  const cronSecret = process.env.CRON_SECRET;
+
+  // Vercel Cron authenticates as `Authorization: Bearer <CRON_SECRET>`.
+  const authz = req.headers.get("authorization") ?? "";
+  if (cronSecret && authz === `Bearer ${cronSecret}`) {
+    return NextResponse.next();
+  }
+
   if (!secret) {
     if (process.env.NODE_ENV === "production") {
       return NextResponse.json(

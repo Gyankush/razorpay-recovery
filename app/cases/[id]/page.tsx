@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { adminHeaders } from "@/lib/admin-key";
 import {
   ArrowLeft,
   ShieldAlert,
@@ -154,7 +155,7 @@ export default function CaseDetailPage() {
       setApproving(true);
       const res = await fetch(`/api/payment-cases/${caseId}/payment-link`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...adminHeaders() },
         body: JSON.stringify({
           approved_by: approvalOperator,
           idempotency_key: `case_${caseId}_rec_${Date.now()}`,

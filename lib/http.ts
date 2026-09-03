@@ -5,8 +5,14 @@ export function isProduction(): boolean {
   return process.env.NODE_ENV === "production";
 }
 
-/** Returns true when the request carries the configured admin secret. */
+/** Returns true when the request carries the admin secret or cron secret. */
 export function isAdminRequest(req: NextRequest): boolean {
+  // Vercel Cron: when CRON_SECRET is configured, Vercel sends it as
+  // `Authorization: Bearer <CRON_SECRET>` on every scheduled hit.
+  const cronSecret = process.env.CRON_SECRET;
+  const authz = req.headers.get("authorization") ?? "";
+  if (cronSecret && authz === `Bearer ${cronSecret}`) return true;
+
   const secret = process.env.ADMIN_SECRET;
   // Dev convenience: open when no secret is configured. Production callers
   // must treat "no secret configured" as misconfigured and refuse (see below).
@@ -28,7 +34,11 @@ export function isAdminRequest(req: NextRequest): boolean {
  * Returns a 401/503 NextResponse when blocked, or null when allowed.
  */
 export function requireAdmin(req: NextRequest): NextResponse | null {
-  if (!process.env.ADMIN_SECRET && isProduction()) {
+  if (
+    !process.env.ADMIN_SECRET &&
+    !process.env.CRON_SECRET &&
+    isProduction()
+  ) {
     return NextResponse.json(
       { error: "Server misconfigured: ADMIN_SECRET is not set" },
       { status: 503 }

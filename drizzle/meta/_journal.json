@@ -15,6 +15,13 @@
       "when": 1788449371311,
       "tag": "0001_simple_marvel_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788450102150,
+      "tag": "0002_tan_valeria_richards",
+      "breakpoints": true
     }
   ]
 }

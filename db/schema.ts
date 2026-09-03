@@ -300,6 +300,32 @@ export const auditLogs = pgTable(
 );
 
 /**
+ * Autopilot Policies table: per-merchant autonomy guardrails for the
+ * autonomous recovery agent. Disabled by default; when enabled, the agent
+ * may only auto-execute allowlisted categories under a per-order amount cap.
+ */
+export const autopilotPolicies = pgTable(
+  "autopilot_policies",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    merchantId: uuid("merchant_id")
+      .references(() => merchants.id, { onDelete: "cascade" })
+      .unique()
+      .notNull(),
+    enabled: boolean("enabled").default(false).notNull(),
+    allowedCategories: text("allowed_categories")
+      .default('["customer_action","transient"]')
+      .notNull(), // JSON array of failure categories the agent may auto-handle
+    maxAutoAmount: integer("max_auto_amount").default(10000).notNull(), // cents/paise cap per order
+    maxActionsPerRun: integer("max_actions_per_run").default(10).notNull(),
+    minConfidence: numeric("min_confidence", { precision: 5, scale: 2 }).default("0.70"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("autopilot_policies_merchant_id_idx").on(t.merchantId)]
+);
+
+/**
  * Evaluation Cases table: Held-out evaluation benchmark set for the AI recovery copilot.
  */
 export const evalCases = pgTable("eval_cases", {
@@ -418,6 +444,9 @@ export type NewAuditLog = typeof auditLogs.$inferInsert;
 
 export type EvalCase = typeof evalCases.$inferSelect;
 export type NewEvalCase = typeof evalCases.$inferInsert;
+
+export type AutopilotPolicy = typeof autopilotPolicies.$inferSelect;
+export type NewAutopilotPolicy = typeof autopilotPolicies.$inferInsert;
 
 export type MerchantMode = (typeof merchantModeEnum.enumValues)[number];
 export type PaymentAttemptStatus = (typeof paymentAttemptStatusEnum.enumValues)[number];
