@@ -4,7 +4,7 @@ import { paymentCases, orders } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createRecoveryPaymentLink } from "@/lib/connectors/razorpay";
 import { logAuditEvent } from "@/lib/domain/audit";
-import { getRequestId, isUuid } from "@/lib/http";
+import { getRequestId, isUuid, getBaseUrl } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +76,8 @@ export async function POST(
       order.amount,
       order.currency,
       String(idempotencyKey),
-      approvedBy
+      approvedBy,
+      { baseUrl: getBaseUrl(request) }
     );
 
     await logAuditEvent({

@@ -97,6 +97,16 @@ export function isUuid(input: unknown): boolean {
   );
 }
 
+/** Public base URL of this deployment (for demo checkout links). */
+export function getBaseUrl(req: NextRequest): string {
+  const proto = req.headers.get("x-forwarded-proto") || "http";
+  const host =
+    req.headers.get("x-forwarded-host") ||
+    req.headers.get("host") ||
+    "localhost:3000";
+  return `${proto}://${host}`;
+}
+
 /** Never-throwing JSON.parse for untrusted DB text columns. */
 export function safeJsonParse<T = unknown>(
   text: string | null | undefined

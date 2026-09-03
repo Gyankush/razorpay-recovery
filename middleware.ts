@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { demoRateLimit } from "@/lib/rate-limit";
 
 /**
  * Central auth gate for money-moving and admin APIs.
@@ -30,6 +31,41 @@ function timingSafeCompare(a: string, b: string): boolean {
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const demoMode = process.env.DEMO_MODE === "true";
+
+  // Public demo sandbox (judge walkthroughs): fixed allowlist, rate-limited.
+  // Money-moving power routes (agent run, batch execute, eval, merchants,
+  // connector tests, sweeps) ALWAYS need a key — even in demo mode. And the
+  // connector forces the simulated gateway whenever DEMO_MODE is on, so a
+  // demo deployment can never touch real money.
+  if (demoMode) {
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const demoAllow: Array<{ match: (p: string, m: string) => boolean; limit: number }> = [
+      { match: (p) => p === "/api/demo/status", limit: 60 },
+      { match: (p) => p.startsWith("/api/demo/scenarios/"), limit: 10 },
+      { match: (p) => p.startsWith("/api/demo/checkout/"), limit: 30 },
+      { match: (p, m) => m === "POST" && p.endsWith("/diagnose"), limit: 30 },
+      {
+        match: (p, m) =>
+          m === "POST" &&
+          (p.endsWith("/payment-link") || p.endsWith("/actions")),
+        limit: 20,
+      },
+    ];
+    for (const rule of demoAllow) {
+      if (rule.match(pathname, req.method)) {
+        const rl = demoRateLimit(`${ip}:${pathname}`, rule.limit, 60_000);
+        if (!rl.allowed) {
+          return NextResponse.json(
+            { error: `Demo rate limit exceeded, retry in ${rl.retryAfterSec ?? 60}s` },
+            { status: 429 }
+          );
+        }
+        return NextResponse.next();
+      }
+    }
+  }
 
   const isCaseMutation =
     pathname.startsWith("/api/payment-cases/") && req.method !== "GET";

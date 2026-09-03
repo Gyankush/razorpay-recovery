@@ -15,6 +15,7 @@ import {
   ClipboardList,
   Search,
   Bot,
+  FlaskConical,
 } from "lucide-react";
 
 interface SummaryData {
@@ -75,6 +76,7 @@ export default function DashboardPage() {
   const [seedSuccessMessage, setSeedSuccessMessage] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "resolved" | "action_required">("all");
+  const [demoMode, setDemoMode] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -84,6 +86,10 @@ export default function DashboardPage() {
         fetch("/api/dashboard/summary"),
         fetch("/api/payment-cases"),
       ]);
+      fetch("/api/demo/status")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => j && setDemoMode(j.demo_mode === true))
+        .catch(() => {});
 
       if (sumRes.ok) {
         const sumData = await sumRes.json();
@@ -228,6 +234,22 @@ export default function DashboardPage() {
 
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-6 py-8">
+        {demoMode && (
+          <div className="mb-6 p-5 rounded-2xl bg-white border-2 border-dashed border-[#2ca7b8] shadow-sm animate-fadeIn">
+            <div className="flex items-center gap-2 mb-2">
+              <FlaskConical className="w-4 h-4 text-[#2ca7b8]" />
+              <span className="text-sm font-extrabold text-[#12304a]">
+                Judge walkthrough — live demo sandbox, no login, no real money
+              </span>
+            </div>
+            <ol className="text-xs text-[#4e6574] space-y-1 list-decimal pl-5">
+              <li><strong>Seed a failure</strong> — click “Seed 3DS Fail” above, watch the queue grow.</li>
+              <li><strong>Investigate</strong> — open the case: AI diagnosis, gateway facts, safety guardrails.</li>
+              <li><strong>Approve &amp; Generate Payment Link</strong> — one bounded, idempotent recovery step.</li>
+              <li><strong>Pay as the customer</strong> — open the link, hit Pay: capture → link paid → case resolved → audit trail. Then check <strong>Audit Trail</strong>.</li>
+            </ol>
+          </div>
+        )}
         {seedSuccessMessage && (
           <div
             role="status"

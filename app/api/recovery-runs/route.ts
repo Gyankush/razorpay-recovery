@@ -4,7 +4,7 @@ import { paymentCases, orders } from "@/db/schema";
 import { eq, and, ne } from "drizzle-orm";
 import { createRecoveryPaymentLink } from "@/lib/connectors/razorpay";
 import { logAuditEvent } from "@/lib/domain/audit";
-import { getRequestId, requireAdmin } from "@/lib/http";
+import { getRequestId, requireAdmin, getBaseUrl } from "@/lib/http";
 
 export const dynamic = "force-dynamic";
 
@@ -91,7 +91,8 @@ export async function POST(req: NextRequest) {
           item.amount,
           item.currency,
           idempKey,
-          operator
+          operator,
+          { baseUrl: getBaseUrl(req) }
         );
 
         results.push({
