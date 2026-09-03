@@ -11,6 +11,7 @@ import {
 } from "@/db/schema";
 import { logAuditEvent } from "@/lib/domain/audit";
 import { isAdminRequest, isProduction } from "@/lib/http";
+import { isDemoMode } from "@/lib/gateway";
 
 export const dynamic = "force-dynamic";
 
@@ -30,8 +31,10 @@ export async function POST(
 
 async function handleScenario(request: NextRequest, scenarioName?: string) {
   // Demo seeders write synthetic orders into the live tables. They must
-  // never be anonymously reachable in production.
-  if (isProduction() && !isAdminRequest(request)) {
+  // never be anonymously reachable in production — except through the
+  // public demo sandbox (DEMO_MODE), which the middleware rate-limits and
+  // which only ever creates clearly-labeled synthetic rows.
+  if (isProduction() && !isDemoMode() && !isAdminRequest(request)) {
     return NextResponse.json(
       { error: "Demo scenarios are disabled in production for non-admin callers" },
       { status: 403 }
